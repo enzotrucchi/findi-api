@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AsociadoController;
 use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\OrganizacionController;
 use App\Http\Controllers\Api\ProyectoController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,10 +19,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Ruta de prueba con autenticación (comentada por ahora)
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
+/*
+|--------------------------------------------------------------------------
+| Rutas de Autenticación
+|--------------------------------------------------------------------------
+*/
+
+// Rutas públicas de autenticación
+Route::prefix('auth')->group(function () {
+    Route::get('google', [AuthController::class, 'redirectToGoogle']);
+    Route::get('google/callback', [AuthController::class, 'handleGoogleCallback']);
+});
+
+// Rutas protegidas con Sanctum
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('auth/me', [AuthController::class, 'me']);
+    Route::post('auth/logout', [AuthController::class, 'logout']);
+});
 
 /*
 |--------------------------------------------------------------------------
