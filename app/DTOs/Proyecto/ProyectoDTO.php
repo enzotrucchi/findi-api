@@ -1,0 +1,70 @@
+<?php
+
+namespace App\DTOs\Proyecto;
+
+use App\Models\Proyecto;
+
+/**
+ * DTO para Proyecto
+ * 
+ * Objeto de transferencia de datos inmutable para representar
+ * un proyecto en las respuestas de la API.
+ */
+class ProyectoDTO
+{
+    /**
+     * Constructor privado para forzar el uso de métodos factory.
+     */
+    private function __construct(
+        public readonly int $id,
+        public readonly string $descripcion,
+        public readonly float $montoActual,
+        public readonly float $montoObjetivo,
+        public readonly string $fechaAlta,
+        public readonly ?string $fechaRealizacion,
+        public readonly string $fechaCreacion,
+        public readonly string $fechaActualizacion,
+    ) {}
+
+    /**
+     * Crear DTO desde un modelo Eloquent.
+     *
+     * @param Proyecto $proyecto
+     * @return self
+     */
+    public static function desdeModelo(Proyecto $proyecto): self
+    {
+        return new self(
+            id: $proyecto->id,
+            descripcion: $proyecto->descripcion,
+            montoActual: $proyecto->monto_actual,
+            montoObjetivo: $proyecto->monto_objetivo,
+            fechaAlta: $proyecto->fecha_alta,
+            fechaRealizacion: $proyecto->fecha_realizacion,
+            fechaCreacion: $proyecto->created_at->toIso8601String(),
+            fechaActualizacion: $proyecto->updated_at->toIso8601String(),
+        );
+    }
+
+    /**
+     * Convertir DTO a array.
+     *
+     * @return array<string, mixed>
+     */
+    public function aArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'descripcion' => $this->descripcion,
+            'montoActual' => $this->montoActual,
+            'montoObjetivo' => $this->montoObjetivo,
+            'fechaAlta' => $this->fechaAlta,
+            'fechaRealizacion' => $this->fechaRealizacion,
+            'porcentajeAvance' => $this->montoObjetivo > 0 
+                ? round(($this->montoActual / $this->montoObjetivo) * 100, 2)
+                : 0,
+            'fechaCreacion' => $this->fechaCreacion,
+            'fechaActualizacion' => $this->fechaActualizacion,
+        ];
+    }
+}
