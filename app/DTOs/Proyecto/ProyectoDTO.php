@@ -60,7 +60,7 @@ class ProyectoDTO
             'montoObjetivo' => $this->montoObjetivo,
             'fechaAlta' => $this->fechaAlta,
             'fechaRealizacion' => $this->fechaRealizacion,
-            'porcentajeAvance' => $this->montoObjetivo > 0 
+            'porcentajeAvance' => $this->montoObjetivo > 0
                 ? round(($this->montoActual / $this->montoObjetivo) * 100, 2)
                 : 0,
             'fechaCreacion' => $this->fechaCreacion,

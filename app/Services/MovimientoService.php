@@ -44,7 +44,7 @@ class MovimientoService
      * @param array<string, mixed> $filtros
      * @return Collection<int, MovimientoDTO>
      */
-    public function obtenerTodos(array $filtros = []): Collection
+    public function obtenerColeccion(array $filtros = []): Collection
     {
         if (isset($filtros['organizacion_id'])) {
             $movimientos = $this->movimientoRepository->obtenerPorOrganizacion($filtros['organizacion_id']);
@@ -60,7 +60,7 @@ class MovimientoService
                 $filtros['fecha_fin']
             );
         } else {
-            $movimientos = $this->movimientoRepository->obtenerTodos();
+            $movimientos = $this->movimientoRepository->obtenerColeccion();
         }
 
         return $movimientos->map(fn($movimiento) => MovimientoDTO::desdeModelo($movimiento));
@@ -166,12 +166,13 @@ class MovimientoService
 
             // Recalcular montos si cambió el proyecto o el tipo
             if (($dto->proyectoId !== null && $dto->proyectoId !== $proyectoAnterior) ||
-                ($dto->tipo !== null && $dto->tipo !== $tipoAnterior)) {
-                
+                ($dto->tipo !== null && $dto->tipo !== $tipoAnterior)
+            ) {
+
                 if ($proyectoAnterior) {
                     $this->actualizarMontoProyecto($proyectoAnterior);
                 }
-                
+
                 $nuevoProyecto = $dto->proyectoId ?? $movimiento->proyecto_id;
                 if ($nuevoProyecto) {
                     $this->actualizarMontoProyecto($nuevoProyecto);
@@ -228,6 +229,40 @@ class MovimientoService
     }
 
     /**
+     * Obtener movimientos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, MovimientoDTO>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        $movimientos = $this->movimientoRepository->obtenerPorIds($ids);
+        return $movimientos->map(fn($movimiento) => MovimientoDTO::desdeModelo($movimiento));
+    }
+
+    /**
+     * Verificar si existe un movimiento.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return $this->movimientoRepository->existePorId($id);
+    }
+
+    /**
+     * Contar movimientos.
+     *
+     * @param array<string, mixed> $filtros
+     * @return int
+     */
+    public function contar(array $filtros = []): int
+    {
+        return $this->movimientoRepository->contarColeccion($filtros);
+    }
+
+    /**
      * Validar datos del movimiento.
      *
      * @param CrearMovimientoDTO $dto
@@ -270,9 +305,9 @@ class MovimientoService
     {
         $ingresos = $this->movimientoRepository->calcularTotalIngresosPorProyecto($proyectoId);
         $egresos = $this->movimientoRepository->calcularTotalEgresosPorProyecto($proyectoId);
-        
+
         $montoActual = $ingresos - $egresos;
-        
+
         $this->proyectoRepository->actualizar($proyectoId, ['monto_actual' => $montoActual]);
     }
 }

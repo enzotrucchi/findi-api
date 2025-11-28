@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Asociado extends Model
 {
@@ -42,5 +43,17 @@ class Asociado extends Model
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class);
+    }
+
+    /**
+     * Obtener las organizaciones del asociado.
+     *
+     * @return BelongsToMany
+     */
+    public function organizaciones(): BelongsToMany
+    {
+        return $this->belongsToMany(Organizacion::class, 'asociado_organizacion')
+            ->withPivot('fecha_alta', 'fecha_baja', 'activo')
+            ->withTimestamps();
     }
 }

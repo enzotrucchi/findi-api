@@ -18,7 +18,7 @@ interface ProveedorRepositoryInterface
      *
      * @return Collection<int, Proveedor>
      */
-    public function obtenerTodos(): Collection;
+    public function obtenerColeccion(): Collection;
 
     /**
      * Obtener proveedores activos.
@@ -76,4 +76,28 @@ interface ProveedorRepositoryInterface
      * @return bool
      */
     public function existeEmail(string $email, ?int $excluirId = null): bool;
+
+    /**
+     * Obtener proveedores por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Proveedor>
+     */
+    public function obtenerPorIds(array $ids): Collection;
+
+    /**
+     * Verificar si existe un proveedor por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool;
+
+    /**
+     * Contar total de proveedores.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int;
 }

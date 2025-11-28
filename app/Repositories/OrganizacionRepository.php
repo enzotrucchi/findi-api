@@ -19,7 +19,7 @@ class OrganizacionRepository implements OrganizacionRepositoryInterface
      *
      * @return Collection<int, Organizacion>
      */
-    public function obtenerTodos(): Collection
+    public function obtenerColeccion(): Collection
     {
         return Organizacion::orderBy('nombre')->get();
     }
@@ -80,7 +80,7 @@ class OrganizacionRepository implements OrganizacionRepositoryInterface
     public function actualizar(int $id, array $datos): bool
     {
         $organizacion = $this->obtenerPorId($id);
-        
+
         if (!$organizacion) {
             return false;
         }
@@ -97,7 +97,7 @@ class OrganizacionRepository implements OrganizacionRepositoryInterface
     public function eliminar(int $id): bool
     {
         $organizacion = $this->obtenerPorId($id);
-        
+
         if (!$organizacion) {
             return false;
         }
@@ -136,5 +136,39 @@ class OrganizacionRepository implements OrganizacionRepositoryInterface
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Obtener organizaciones por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Organizacion>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Organizacion::whereIn('id', $ids)
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    /**
+     * Verificar si existe una organización por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Organizacion::where('id', $id)->exists();
+    }
+
+    /**
+     * Contar total de organizaciones.
+     *
+     * @return int
+     */
+    public function contarColeccion(): int
+    {
+        return Organizacion::count();
     }
 }

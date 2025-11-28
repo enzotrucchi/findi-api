@@ -33,14 +33,14 @@ class OrganizacionService
      * @param bool $soloProduccion
      * @return Collection<int, OrganizacionDTO>
      */
-    public function obtenerTodos(bool $soloPrueba = false, bool $soloProduccion = false): Collection
+    public function obtenerColeccion(bool $soloPrueba = false, bool $soloProduccion = false): Collection
     {
         if ($soloPrueba) {
             $organizaciones = $this->organizacionRepository->obtenerPrueba();
         } elseif ($soloProduccion) {
             $organizaciones = $this->organizacionRepository->obtenerProduccion();
         } else {
-            $organizaciones = $this->organizacionRepository->obtenerTodos();
+            $organizaciones = $this->organizacionRepository->obtenerColeccion();
         }
 
         return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
@@ -122,27 +122,27 @@ class OrganizacionService
 
         // Normalizar datos
         $datosNormalizados = [];
-        
+
         if ($dto->nombre !== null) {
             $datosNormalizados['nombre'] = trim($dto->nombre);
         }
-        
+
         if ($dto->adminEmail !== null) {
             $datosNormalizados['admin_email'] = strtolower(trim($dto->adminEmail));
         }
-        
+
         if ($dto->adminNombre !== null) {
             $datosNormalizados['admin_nombre'] = $this->normalizarNombre($dto->adminNombre);
         }
-        
+
         if ($dto->fechaAlta !== null) {
             $datosNormalizados['fecha_alta'] = $dto->fechaAlta;
         }
-        
+
         if ($dto->esPrueba !== null) {
             $datosNormalizados['es_prueba'] = $dto->esPrueba;
         }
-        
+
         if ($dto->fechaFinPrueba !== null) {
             $datosNormalizados['fecha_fin_prueba'] = $dto->fechaFinPrueba;
         }
@@ -180,6 +180,39 @@ class OrganizacionService
     {
         $organizaciones = $this->organizacionRepository->buscar($termino);
         return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
+    }
+
+    /**
+     * Obtener organizaciones por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, OrganizacionDTO>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        $organizaciones = $this->organizacionRepository->obtenerPorIds($ids);
+        return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
+    }
+
+    /**
+     * Verificar si existe una organización.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return $this->organizacionRepository->existePorId($id);
+    }
+
+    /**
+     * Contar organizaciones.
+     *
+     * @return int
+     */
+    public function contar(): int
+    {
+        return $this->organizacionRepository->contarColeccion();
     }
 
     /**

@@ -19,7 +19,7 @@ class ProveedorRepository implements ProveedorRepositoryInterface
      *
      * @return Collection<int, Proveedor>
      */
-    public function obtenerTodos(): Collection
+    public function obtenerColeccion(): Collection
     {
         return Proveedor::orderBy('nombre')->get();
     }
@@ -68,7 +68,7 @@ class ProveedorRepository implements ProveedorRepositoryInterface
     public function actualizar(int $id, array $datos): bool
     {
         $proveedor = $this->obtenerPorId($id);
-        
+
         if (!$proveedor) {
             return false;
         }
@@ -85,7 +85,7 @@ class ProveedorRepository implements ProveedorRepositoryInterface
     public function eliminar(int $id): bool
     {
         $proveedor = $this->obtenerPorId($id);
-        
+
         if (!$proveedor) {
             return false;
         }
@@ -124,5 +124,46 @@ class ProveedorRepository implements ProveedorRepositoryInterface
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Obtener proveedores por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Proveedor>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Proveedor::whereIn('id', $ids)
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    /**
+     * Verificar si existe un proveedor por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Proveedor::where('id', $id)->exists();
+    }
+
+    /**
+     * Contar total de proveedores.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int
+    {
+        $query = Proveedor::query();
+
+        if ($soloActivos) {
+            $query->where('activo', true);
+        }
+
+        return $query->count();
     }
 }

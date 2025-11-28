@@ -18,7 +18,7 @@ interface AsociadoRepositoryInterface
      *
      * @return Collection<int, Asociado>
      */
-    public function obtenerTodos(): Collection;
+    public function obtenerColeccion(): Collection;
 
     /**
      * Obtener asociados activos.
@@ -83,4 +83,28 @@ interface AsociadoRepositoryInterface
      * @return bool
      */
     public function existeEmail(string $email, ?int $excluirId = null): bool;
+
+    /**
+     * Obtener asociados por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Asociado>
+     */
+    public function obtenerPorIds(array $ids): Collection;
+
+    /**
+     * Verificar si existe un asociado por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool;
+
+    /**
+     * Contar total de asociados.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int;
 }

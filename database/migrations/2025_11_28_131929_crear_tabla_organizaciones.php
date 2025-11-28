@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('organizaciones', function (Blueprint $table) {
             $table->id();
+            $table->string('nombre', 255);
+            $table->date('fecha_alta');
+            $table->boolean('es_prueba')->default(false);
+            $table->date('fecha_fin_prueba')->nullable();
             $table->timestamps();
+
+            $table->index('es_prueba');
+            $table->index('fecha_alta');
         });
     }
 

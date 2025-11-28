@@ -33,14 +33,14 @@ class ProyectoService
      * @param bool $soloFinalizados
      * @return Collection<int, ProyectoDTO>
      */
-    public function obtenerTodos(bool $soloActivos = false, bool $soloFinalizados = false): Collection
+    public function obtenerColeccion(bool $soloActivos = false, bool $soloFinalizados = false): Collection
     {
         if ($soloActivos) {
             $proyectos = $this->proyectoRepository->obtenerActivos();
         } elseif ($soloFinalizados) {
             $proyectos = $this->proyectoRepository->obtenerFinalizados();
         } else {
-            $proyectos = $this->proyectoRepository->obtenerTodos();
+            $proyectos = $this->proyectoRepository->obtenerColeccion();
         }
 
         return $proyectos->map(fn($proyecto) => ProyectoDTO::desdeModelo($proyecto));
@@ -157,5 +157,39 @@ class ProyectoService
     {
         $proyectos = $this->proyectoRepository->buscar($termino);
         return $proyectos->map(fn($proyecto) => ProyectoDTO::desdeModelo($proyecto));
+    }
+
+    /**
+     * Obtener proyectos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, ProyectoDTO>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        $proyectos = $this->proyectoRepository->obtenerPorIds($ids);
+        return $proyectos->map(fn($proyecto) => ProyectoDTO::desdeModelo($proyecto));
+    }
+
+    /**
+     * Verificar si existe un proyecto.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return $this->proyectoRepository->existePorId($id);
+    }
+
+    /**
+     * Contar proyectos.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contar(bool $soloActivos = false): int
+    {
+        return $this->proyectoRepository->contarColeccion($soloActivos);
     }
 }

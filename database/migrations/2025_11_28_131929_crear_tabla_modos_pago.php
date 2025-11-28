@@ -13,7 +13,12 @@ return new class extends Migration
     {
         Schema::create('modos_pago', function (Blueprint $table) {
             $table->id();
+            $table->string('nombre', 100);
+            $table->string('descripcion', 255)->nullable();
+            $table->boolean('activo')->default(true);
             $table->timestamps();
+
+            $table->index('activo');
         });
     }
 

@@ -33,14 +33,14 @@ class AsociadoService
      * @param bool $soloAdmins
      * @return Collection<int, AsociadoDTO>
      */
-    public function obtenerTodos(bool $soloActivos = false, bool $soloAdmins = false): Collection
+    public function obtenerColeccion(bool $soloActivos = false, bool $soloAdmins = false): Collection
     {
         if ($soloAdmins) {
             $asociados = $this->asociadoRepository->obtenerAdministradores();
         } elseif ($soloActivos) {
             $asociados = $this->asociadoRepository->obtenerActivos();
         } else {
-            $asociados = $this->asociadoRepository->obtenerTodos();
+            $asociados = $this->asociadoRepository->obtenerColeccion();
         }
 
         return $asociados->map(fn($asociado) => AsociadoDTO::desdeModelo($asociado));
@@ -117,27 +117,27 @@ class AsociadoService
 
         // Normalizar datos
         $datosNormalizados = [];
-        
+
         if ($dto->nombre !== null) {
             $datosNormalizados['nombre'] = $this->normalizarNombre($dto->nombre);
         }
-        
+
         if ($dto->email !== null) {
             $datosNormalizados['email'] = strtolower(trim($dto->email));
         }
-        
+
         if ($dto->telefono !== null) {
             $datosNormalizados['telefono'] = $this->normalizarTelefono($dto->telefono);
         }
-        
+
         if ($dto->domicilio !== null) {
             $datosNormalizados['domicilio'] = trim($dto->domicilio);
         }
-        
+
         if ($dto->esAdmin !== null) {
             $datosNormalizados['es_admin'] = $dto->esAdmin;
         }
-        
+
         if ($dto->activo !== null) {
             $datosNormalizados['activo'] = $dto->activo;
         }
@@ -175,6 +175,40 @@ class AsociadoService
     {
         $asociados = $this->asociadoRepository->buscar($termino);
         return $asociados->map(fn($asociado) => AsociadoDTO::desdeModelo($asociado));
+    }
+
+    /**
+     * Obtener asociados por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, AsociadoDTO>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        $asociados = $this->asociadoRepository->obtenerPorIds($ids);
+        return $asociados->map(fn($asociado) => AsociadoDTO::desdeModelo($asociado));
+    }
+
+    /**
+     * Verificar si existe un asociado.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return $this->asociadoRepository->existePorId($id);
+    }
+
+    /**
+     * Contar asociados.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contar(bool $soloActivos = false): int
+    {
+        return $this->asociadoRepository->contarColeccion($soloActivos);
     }
 
     /**

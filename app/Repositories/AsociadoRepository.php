@@ -19,7 +19,7 @@ class AsociadoRepository implements AsociadoRepositoryInterface
      *
      * @return Collection<int, Asociado>
      */
-    public function obtenerTodos(): Collection
+    public function obtenerColeccion(): Collection
     {
         return Asociado::orderBy('nombre')->get();
     }
@@ -81,7 +81,7 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     public function actualizar(int $id, array $datos): bool
     {
         $asociado = $this->obtenerPorId($id);
-        
+
         if (!$asociado) {
             return false;
         }
@@ -98,7 +98,7 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     public function eliminar(int $id): bool
     {
         $asociado = $this->obtenerPorId($id);
-        
+
         if (!$asociado) {
             return false;
         }
@@ -137,5 +137,46 @@ class AsociadoRepository implements AsociadoRepositoryInterface
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Obtener asociados por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Asociado>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Asociado::whereIn('id', $ids)
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    /**
+     * Verificar si existe un asociado por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Asociado::where('id', $id)->exists();
+    }
+
+    /**
+     * Contar total de asociados.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int
+    {
+        $query = Asociado::query();
+
+        if ($soloActivos) {
+            $query->where('activo', true);
+        }
+
+        return $query->count();
     }
 }

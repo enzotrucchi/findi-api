@@ -42,4 +42,12 @@ class Proyecto extends Model
     {
         return $this->hasMany(Movimiento::class);
     }
+
+    /**
+     * Historial / comentarios del proyecto.
+     */
+    public function historial(): HasMany
+    {
+        return $this->hasMany(ProyectoHistorial::class);
+    }
 }

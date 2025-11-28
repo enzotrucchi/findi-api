@@ -18,7 +18,7 @@ interface MovimientoRepositoryInterface
      *
      * @return Collection<int, Movimiento>
      */
-    public function obtenerTodos(): Collection;
+    public function obtenerColeccion(): Collection;
 
     /**
      * Obtener movimientos por organización.
@@ -117,4 +117,28 @@ interface MovimientoRepositoryInterface
      * @return float
      */
     public function calcularTotalEgresosPorProyecto(int $proyectoId): float;
+
+    /**
+     * Obtener movimientos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Movimiento>
+     */
+    public function obtenerPorIds(array $ids): Collection;
+
+    /**
+     * Verificar si existe un movimiento por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool;
+
+    /**
+     * Contar total de movimientos.
+     *
+     * @param array<string, mixed> $filtros
+     * @return int
+     */
+    public function contarColeccion(array $filtros = []): int;
 }

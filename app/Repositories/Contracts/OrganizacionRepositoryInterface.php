@@ -18,7 +18,7 @@ interface OrganizacionRepositoryInterface
      *
      * @return Collection<int, Organizacion>
      */
-    public function obtenerTodos(): Collection;
+    public function obtenerColeccion(): Collection;
 
     /**
      * Obtener organizaciones de prueba.
@@ -83,4 +83,27 @@ interface OrganizacionRepositoryInterface
      * @return bool
      */
     public function existeNombre(string $nombre, ?int $excluirId = null): bool;
+
+    /**
+     * Obtener organizaciones por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Organizacion>
+     */
+    public function obtenerPorIds(array $ids): Collection;
+
+    /**
+     * Verificar si existe una organización por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool;
+
+    /**
+     * Contar total de organizaciones.
+     *
+     * @return int
+     */
+    public function contarColeccion(): int;
 }

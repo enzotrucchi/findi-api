@@ -18,7 +18,7 @@ interface ProyectoRepositoryInterface
      *
      * @return Collection<int, Proyecto>
      */
-    public function obtenerTodos(): Collection;
+    public function obtenerColeccion(): Collection;
 
     /**
      * Obtener proyectos activos (sin fecha de realización).
@@ -74,4 +74,28 @@ interface ProyectoRepositoryInterface
      * @return Collection<int, Proyecto>
      */
     public function buscar(string $termino): Collection;
+
+    /**
+     * Obtener proyectos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Proyecto>
+     */
+    public function obtenerPorIds(array $ids): Collection;
+
+    /**
+     * Verificar si existe un proyecto por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool;
+
+    /**
+     * Contar total de proyectos.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int;
 }

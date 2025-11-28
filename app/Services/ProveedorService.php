@@ -32,11 +32,11 @@ class ProveedorService
      * @param bool $soloActivos
      * @return Collection<int, ProveedorDTO>
      */
-    public function obtenerTodos(bool $soloActivos = false): Collection
+    public function obtenerColeccion(bool $soloActivos = false): Collection
     {
-        $proveedores = $soloActivos 
+        $proveedores = $soloActivos
             ? $this->proveedorRepository->obtenerActivos()
-            : $this->proveedorRepository->obtenerTodos();
+            : $this->proveedorRepository->obtenerColeccion();
 
         return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
     }
@@ -110,19 +110,19 @@ class ProveedorService
 
         // Normalizar datos
         $datosNormalizados = [];
-        
+
         if ($dto->nombre !== null) {
             $datosNormalizados['nombre'] = $this->normalizarNombre($dto->nombre);
         }
-        
+
         if ($dto->email !== null) {
             $datosNormalizados['email'] = strtolower(trim($dto->email));
         }
-        
+
         if ($dto->telefono !== null) {
             $datosNormalizados['telefono'] = $this->normalizarTelefono($dto->telefono);
         }
-        
+
         if ($dto->activo !== null) {
             $datosNormalizados['activo'] = $dto->activo;
         }
@@ -161,6 +161,40 @@ class ProveedorService
         $proveedores = $this->proveedorRepository->buscar($termino);
 
         return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
+    }
+
+    /**
+     * Obtener proveedores por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, ProveedorDTO>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        $proveedores = $this->proveedorRepository->obtenerPorIds($ids);
+        return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
+    }
+
+    /**
+     * Verificar si existe un proveedor.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return $this->proveedorRepository->existePorId($id);
+    }
+
+    /**
+     * Contar proveedores.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contar(bool $soloActivos = false): int
+    {
+        return $this->proveedorRepository->contarColeccion($soloActivos);
     }
 
     /**

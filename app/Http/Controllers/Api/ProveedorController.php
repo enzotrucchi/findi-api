@@ -44,7 +44,7 @@ class ProveedorController extends Controller
             if ($termino) {
                 $proveedores = $this->proveedorService->buscar($termino);
             } else {
-                $proveedores = $this->proveedorService->obtenerTodos((bool) $soloActivos);
+                $proveedores = $this->proveedorService->obtenerColeccion((bool) $soloActivos);
             }
 
             $datos = $proveedores->map(fn($dto) => $dto->aArray());

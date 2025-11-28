@@ -19,7 +19,7 @@ class ProyectoRepository implements ProyectoRepositoryInterface
      *
      * @return Collection<int, Proyecto>
      */
-    public function obtenerTodos(): Collection
+    public function obtenerColeccion(): Collection
     {
         return Proyecto::orderBy('fecha_alta', 'desc')->get();
     }
@@ -80,7 +80,7 @@ class ProyectoRepository implements ProyectoRepositoryInterface
     public function actualizar(int $id, array $datos): bool
     {
         $proyecto = $this->obtenerPorId($id);
-        
+
         if (!$proyecto) {
             return false;
         }
@@ -97,7 +97,7 @@ class ProyectoRepository implements ProyectoRepositoryInterface
     public function eliminar(int $id): bool
     {
         $proyecto = $this->obtenerPorId($id);
-        
+
         if (!$proyecto) {
             return false;
         }
@@ -116,5 +116,46 @@ class ProyectoRepository implements ProyectoRepositoryInterface
         return Proyecto::where('descripcion', 'like', "%{$termino}%")
             ->orderBy('fecha_alta', 'desc')
             ->get();
+    }
+
+    /**
+     * Obtener proyectos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Proyecto>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Proyecto::whereIn('id', $ids)
+            ->orderBy('fecha_alta', 'desc')
+            ->get();
+    }
+
+    /**
+     * Verificar si existe un proyecto por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Proyecto::where('id', $id)->exists();
+    }
+
+    /**
+     * Contar total de proyectos.
+     *
+     * @param bool $soloActivos
+     * @return int
+     */
+    public function contarColeccion(bool $soloActivos = false): int
+    {
+        $query = Proyecto::query();
+
+        if ($soloActivos) {
+            $query->whereNull('fecha_realizacion');
+        }
+
+        return $query->count();
     }
 }

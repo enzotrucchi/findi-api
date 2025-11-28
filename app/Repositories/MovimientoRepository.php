@@ -19,7 +19,7 @@ class MovimientoRepository implements MovimientoRepositoryInterface
      *
      * @return Collection<int, Movimiento>
      */
-    public function obtenerTodos(): Collection
+    public function obtenerColeccion(): Collection
     {
         return Movimiento::with(['proyecto', 'asociado', 'proveedor', 'modoPago', 'organizacion'])
             ->orderBy('fecha', 'desc')
@@ -136,7 +136,7 @@ class MovimientoRepository implements MovimientoRepositoryInterface
     public function actualizar(int $id, array $datos): bool
     {
         $movimiento = Movimiento::find($id);
-        
+
         if (!$movimiento) {
             return false;
         }
@@ -153,7 +153,7 @@ class MovimientoRepository implements MovimientoRepositoryInterface
     public function eliminar(int $id): bool
     {
         $movimiento = Movimiento::find($id);
-        
+
         if (!$movimiento) {
             return false;
         }
@@ -200,5 +200,64 @@ class MovimientoRepository implements MovimientoRepositoryInterface
         return Movimiento::where('proyecto_id', $proyectoId)
             ->where('tipo', 'egreso')
             ->sum('monto');
+    }
+
+    /**
+     * Obtener movimientos por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection<int, Movimiento>
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Movimiento::with(['proyecto', 'asociado', 'proveedor', 'modoPago', 'organizacion'])
+            ->whereIn('id', $ids)
+            ->orderBy('fecha', 'desc')
+            ->orderBy('hora', 'desc')
+            ->get();
+    }
+
+    /**
+     * Verificar si existe un movimiento por ID.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Movimiento::where('id', $id)->exists();
+    }
+
+    /**
+     * Contar total de movimientos.
+     *
+     * @param array<string, mixed> $filtros
+     * @return int
+     */
+    public function contarColeccion(array $filtros = []): int
+    {
+        $query = Movimiento::query();
+
+        if (isset($filtros['organizacion_id'])) {
+            $query->where('organizacion_id', $filtros['organizacion_id']);
+        }
+
+        if (isset($filtros['proyecto_id'])) {
+            $query->where('proyecto_id', $filtros['proyecto_id']);
+        }
+
+        if (isset($filtros['tipo'])) {
+            $query->where('tipo', $filtros['tipo']);
+        }
+
+        if (isset($filtros['status'])) {
+            $query->where('status', $filtros['status']);
+        }
+
+        if (isset($filtros['fecha_inicio']) && isset($filtros['fecha_fin'])) {
+            $query->whereBetween('fecha', [$filtros['fecha_inicio'], $filtros['fecha_fin']]);
+        }
+
+        return $query->count();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Organizacion extends Model
 {
@@ -24,8 +25,6 @@ class Organizacion extends Model
      */
     protected $fillable = [
         'nombre',
-        'admin_email',
-        'admin_nombre',
         'fecha_alta',
         'es_prueba',
         'fecha_fin_prueba',
@@ -48,5 +47,17 @@ class Organizacion extends Model
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class);
+    }
+
+    /**
+     * Obtener los asociados de la organización.
+     *
+     * @return BelongsToMany
+     */
+    public function asociados(): BelongsToMany
+    {
+        return $this->belongsToMany(Asociado::class, 'asociado_organizacion')
+            ->withPivot('fecha_alta', 'fecha_baja', 'activo')
+            ->withTimestamps();
     }
 }
