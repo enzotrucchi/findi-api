@@ -24,8 +24,6 @@ class ActualizarAsociadoDTO
         public readonly ?string $email = null,
         public readonly ?string $telefono = null,
         public readonly ?string $domicilio = null,
-        public readonly ?bool $esAdmin = null,
-        public readonly ?bool $activo = null,
     ) {}
 
     /**
@@ -41,8 +39,6 @@ class ActualizarAsociadoDTO
             email: $datos['email'] ?? null,
             telefono: $datos['telefono'] ?? null,
             domicilio: array_key_exists('domicilio', $datos) ? $datos['domicilio'] : null,
-            esAdmin: isset($datos['es_admin']) ? (bool) $datos['es_admin'] : null,
-            activo: isset($datos['activo']) ? (bool) $datos['activo'] : null,
         );
     }
 
@@ -70,14 +66,6 @@ class ActualizarAsociadoDTO
 
         if ($this->domicilio !== null) {
             $datos['domicilio'] = $this->domicilio;
-        }
-
-        if ($this->esAdmin !== null) {
-            $datos['es_admin'] = $this->esAdmin;
-        }
-
-        if ($this->activo !== null) {
-            $datos['activo'] = $this->activo;
         }
 
         return $datos;

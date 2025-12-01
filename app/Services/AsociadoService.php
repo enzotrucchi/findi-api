@@ -83,8 +83,6 @@ class AsociadoService
             'email' => strtolower(trim($dto->email)),
             'telefono' => $this->normalizarTelefono($dto->telefono),
             'domicilio' => $dto->domicilio ? trim($dto->domicilio) : null,
-            'es_admin' => $dto->esAdmin,
-            'activo' => $dto->activo,
         ];
 
         $asociado = DB::transaction(function () use ($datosNormalizados) {
@@ -132,14 +130,6 @@ class AsociadoService
 
         if ($dto->domicilio !== null) {
             $datosNormalizados['domicilio'] = trim($dto->domicilio);
-        }
-
-        if ($dto->esAdmin !== null) {
-            $datosNormalizados['es_admin'] = $dto->esAdmin;
-        }
-
-        if ($dto->activo !== null) {
-            $datosNormalizados['activo'] = $dto->activo;
         }
 
         DB::transaction(function () use ($id, $datosNormalizados) {

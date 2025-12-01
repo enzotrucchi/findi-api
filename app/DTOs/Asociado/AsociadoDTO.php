@@ -21,8 +21,6 @@ class AsociadoDTO
         public readonly string $email,
         public readonly string $telefono,
         public readonly ?string $domicilio,
-        public readonly bool $esAdmin,
-        public readonly bool $activo,
         public readonly string $fechaCreacion,
         public readonly string $fechaActualizacion,
     ) {}
@@ -41,8 +39,6 @@ class AsociadoDTO
             email: $asociado->email,
             telefono: $asociado->telefono,
             domicilio: $asociado->domicilio,
-            esAdmin: $asociado->es_admin,
-            activo: $asociado->activo,
             fechaCreacion: $asociado->created_at->toIso8601String(),
             fechaActualizacion: $asociado->updated_at->toIso8601String(),
         );
@@ -61,8 +57,6 @@ class AsociadoDTO
             'email' => $this->email,
             'telefono' => $this->telefono,
             'domicilio' => $this->domicilio,
-            'esAdmin' => $this->esAdmin,
-            'activo' => $this->activo,
             'fechaCreacion' => $this->fechaCreacion,
             'fechaActualizacion' => $this->fechaActualizacion,
         ];

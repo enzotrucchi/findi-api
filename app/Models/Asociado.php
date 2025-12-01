@@ -21,18 +21,6 @@ class Asociado extends Model
         'email',
         'telefono',
         'domicilio',
-        'es_admin',
-        'activo',
-    ];
-
-    /**
-     * Los atributos que deben ser convertidos.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'es_admin' => 'boolean',
-        'activo' => 'boolean',
     ];
 
     /**
@@ -53,7 +41,7 @@ class Asociado extends Model
     public function organizaciones(): BelongsToMany
     {
         return $this->belongsToMany(Organizacion::class, 'asociado_organizacion')
-            ->withPivot('fecha_alta', 'fecha_baja', 'activo')
+            ->withPivot('fecha_alta', 'fecha_baja', 'activo', 'es_admin')
             ->withTimestamps();
     }
 }

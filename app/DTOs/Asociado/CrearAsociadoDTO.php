@@ -24,8 +24,6 @@ class CrearAsociadoDTO
         public readonly string $email,
         public readonly string $telefono,
         public readonly ?string $domicilio = null,
-        public readonly bool $esAdmin = false,
-        public readonly bool $activo = true,
     ) {}
 
     /**
@@ -41,8 +39,6 @@ class CrearAsociadoDTO
             email: $datos['email'],
             telefono: $datos['telefono'],
             domicilio: $datos['domicilio'] ?? null,
-            esAdmin: $datos['es_admin'] ?? false,
-            activo: $datos['activo'] ?? true,
         );
     }
 
@@ -58,8 +54,6 @@ class CrearAsociadoDTO
             'email' => $this->email,
             'telefono' => $this->telefono,
             'domicilio' => $this->domicilio,
-            'es_admin' => $this->esAdmin,
-            'activo' => $this->activo,
         ];
     }
 }
