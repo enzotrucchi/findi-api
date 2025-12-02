@@ -85,8 +85,6 @@ class OrganizacionService
         // Normalizar datos
         $datosNormalizados = [
             'nombre' => trim($dto->nombre),
-            'admin_email' => strtolower(trim($dto->adminEmail)),
-            'admin_nombre' => $this->normalizarNombre($dto->adminNombre),
             'fecha_alta' => $dto->fechaAlta,
             'es_prueba' => $dto->esPrueba,
             'fecha_fin_prueba' => $dto->fechaFinPrueba,
@@ -125,14 +123,6 @@ class OrganizacionService
 
         if ($dto->nombre !== null) {
             $datosNormalizados['nombre'] = trim($dto->nombre);
-        }
-
-        if ($dto->adminEmail !== null) {
-            $datosNormalizados['admin_email'] = strtolower(trim($dto->adminEmail));
-        }
-
-        if ($dto->adminNombre !== null) {
-            $datosNormalizados['admin_nombre'] = $this->normalizarNombre($dto->adminNombre);
         }
 
         if ($dto->fechaAlta !== null) {

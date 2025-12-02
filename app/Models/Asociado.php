@@ -3,13 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Laravel\Sanctum\HasApiTokens;
 
-class Asociado extends Model
+class Asociado extends Authenticatable
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Los atributos que son asignables en masa.
@@ -21,6 +23,32 @@ class Asociado extends Model
         'email',
         'telefono',
         'domicilio',
+        'google_id',
+        'email_verified_at',
+        'password',
+    ];
+
+    /**
+     * Los atributos que deben ser ocultados en serialización.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'google_id',
+    ];
+
+    /**
+     * Los atributos que deben ser convertidos.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'activo' => 'boolean',
+        'es_admin' => 'boolean',
     ];
 
     /**

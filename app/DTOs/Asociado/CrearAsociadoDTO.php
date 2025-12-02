@@ -22,7 +22,7 @@ class CrearAsociadoDTO
     public function __construct(
         public readonly string $nombre,
         public readonly string $email,
-        public readonly string $telefono,
+        public readonly ?string $telefono = null,
         public readonly ?string $domicilio = null,
     ) {}
 
@@ -37,7 +37,7 @@ class CrearAsociadoDTO
         return new self(
             nombre: $datos['nombre'],
             email: $datos['email'],
-            telefono: $datos['telefono'],
+            telefono: $datos['telefono'] ?? null,
             domicilio: $datos['domicilio'] ?? null,
         );
     }

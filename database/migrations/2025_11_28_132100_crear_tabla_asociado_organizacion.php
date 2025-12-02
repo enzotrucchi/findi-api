@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('fecha_alta')->nullable();
             $table->date('fecha_baja')->nullable();
             $table->boolean('activo')->default(true);
+            $table->boolean('es_admin')->default(false);
             $table->timestamps();
 
             // Índice único para evitar duplicados

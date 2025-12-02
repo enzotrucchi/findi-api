@@ -18,8 +18,6 @@ class OrganizacionDTO
     private function __construct(
         public readonly int $id,
         public readonly string $nombre,
-        public readonly string $adminEmail,
-        public readonly string $adminNombre,
         public readonly string $fechaAlta,
         public readonly bool $esPrueba,
         public readonly ?string $fechaFinPrueba,
@@ -38,8 +36,6 @@ class OrganizacionDTO
         return new self(
             id: $organizacion->id,
             nombre: $organizacion->nombre,
-            adminEmail: $organizacion->admin_email,
-            adminNombre: $organizacion->admin_nombre,
             fechaAlta: $organizacion->fecha_alta,
             esPrueba: $organizacion->es_prueba,
             fechaFinPrueba: $organizacion->fecha_fin_prueba,
@@ -58,8 +54,6 @@ class OrganizacionDTO
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
-            'adminEmail' => $this->adminEmail,
-            'adminNombre' => $this->adminNombre,
             'fechaAlta' => $this->fechaAlta,
             'esPrueba' => $this->esPrueba,
             'fechaFinPrueba' => $this->fechaFinPrueba,

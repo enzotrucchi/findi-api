@@ -15,14 +15,23 @@ return new class extends Migration
             $table->id();
             $table->string('nombre', 255);
             $table->string('email', 255)->unique();
-            $table->string('telefono', 50);
+            $table->string('telefono', 50)->nullable();
             $table->string('domicilio', 500)->nullable();
             $table->boolean('es_admin')->default(false);
             $table->boolean('activo')->default(true);
+
+            // Campos para autenticación
+            $table->string('password')->nullable();
+            $table->string('google_id')->nullable()->unique();
+            $table->string('avatar')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->rememberToken();
+
             $table->timestamps();
-            
+
             $table->index('activo');
             $table->index('es_admin');
+            $table->index('google_id');
         });
     }
 

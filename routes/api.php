@@ -25,20 +25,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Rutas públicas de autenticación
-// Route::prefix('auth')->group(function () {
-// Route::get('google', [AuthController::class, 'redirectToGoogle']);
-
 Route::post('auth/google', [AuthController::class, 'googleLogin']);
 
+Route::post('auth/crear-cuenta', [AuthController::class, 'crearCuenta']);
 
-Route::get('google/callback', [AuthController::class, 'handleGoogleCallback']);
-// });
-
-// Rutas protegidas con Sanctum
 Route::middleware('auth:sanctum')->group(function () {
-    // Route::get('auth/me', [AuthController::class, 'me']);
-    // Route::post('auth/logout', [AuthController::class, 'logout']);
 
     /*
 |--------------------------------------------------------------------------
