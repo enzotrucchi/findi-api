@@ -44,6 +44,13 @@ interface MovimientoRepositoryInterface
      */
     public function obtenerPorTipo(string $tipo): Collection;
 
+
+    /**
+     * Obtener suma por tipo.
+     * Calcula balance
+     */
+    public function obtenerSumaPorTipo(string $tipo): float;
+
     /**
      * Obtener movimientos por status.
      *

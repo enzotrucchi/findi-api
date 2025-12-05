@@ -45,6 +45,16 @@ class AsociadoController extends Controller
         }
     }
 
+    public function obtenerEstadisticas(): JsonResponse
+    {
+        try {
+            $estadisticas = $this->asociadoService->obtenerEstadisticas();
+            return ApiResponse::exito($estadisticas, 'Estadísticas de asociados obtenidas');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener estadísticas: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function crear(Request $request): JsonResponse
     {
         try {

@@ -8,10 +8,13 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class Asociado extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+    // use \App\Models\Traits\TieneOrganizacionSeleccionadaScopeAsociado;
 
     /**
      * Los atributos que son asignables en masa.
@@ -23,6 +26,7 @@ class Asociado extends Authenticatable
         'email',
         'telefono',
         'domicilio',
+        'organizacion_seleccionada_id',
         'google_id',
         'email_verified_at',
         'password',
@@ -71,5 +75,23 @@ class Asociado extends Authenticatable
         return $this->belongsToMany(Organizacion::class, 'asociado_organizacion')
             ->withPivot('fecha_alta', 'fecha_baja', 'activo', 'es_admin')
             ->withTimestamps();
+    }
+
+
+    /**
+     * Organización seleccionada del asociado (FK en la tabla asociados).
+     */
+    public function organizacionSeleccionada(): BelongsTo
+    {
+        return $this->belongsTo(Organizacion::class, 'organizacion_seleccionada_id');
+    }
+
+    /**
+     * Accessor: $asociado->organizacion_seleccionada_id (ya lo expone Eloquent),
+     * pero si quisieras un alias:
+     */
+    public function getOrganizacionSeleccionadaIdAttribute($value): ?int
+    {
+        return $value ? (int) $value : null;
     }
 }

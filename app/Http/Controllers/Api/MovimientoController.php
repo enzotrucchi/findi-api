@@ -43,6 +43,17 @@ class MovimientoController extends Controller
         }
     }
 
+    public function obtenerBalance(Request $request): JsonResponse
+    {
+        try {
+            $balance = $this->movimientoService->obtenerBalance();
+
+            return ApiResponse::exito($balance, 'Balance obtenido exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener balance: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function crear(Request $request): JsonResponse
     {
         try {

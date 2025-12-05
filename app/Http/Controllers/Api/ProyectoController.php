@@ -28,6 +28,17 @@ class ProyectoController extends Controller
         }
     }
 
+    public function obtenerEstadisticas(): JsonResponse
+    {
+        try {
+            $estadisticas = $this->proyectoService->obtenerEstadisticas();
+
+            return ApiResponse::exito($estadisticas, 'Estadísticas de proyectos obtenidas exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener estadísticas de proyectos: ' . $e->getMessage(), 500);
+        }
+    }
+
     public function obtener(int $id): JsonResponse
     {
         try {

@@ -19,7 +19,7 @@ class AsociadoDTO
         public readonly int $id,
         public readonly string $nombre,
         public readonly string $email,
-        public readonly string $telefono,
+        public readonly ?string $telefono,
         public readonly ?string $domicilio,
         public readonly string $fechaCreacion,
         public readonly string $fechaActualizacion,

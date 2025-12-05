@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Proyecto extends Model
 {
     use HasFactory;
-
+    use Traits\TieneOrganizacionSeleccionadaScope;
     /**
      * Los atributos que son asignables en masa.
      *
@@ -21,6 +21,7 @@ class Proyecto extends Model
         'monto_objetivo',
         'fecha_alta',
         'fecha_realizacion',
+        'organizacion_id',
     ];
 
     /**
@@ -49,5 +50,13 @@ class Proyecto extends Model
     public function historial(): HasMany
     {
         return $this->hasMany(ProyectoHistorial::class);
+    }
+
+    /**
+     * Organización a la que pertenece el proyecto.
+     */
+    public function organizacion()
+    {
+        return $this->belongsTo(Organizacion::class);
     }
 }

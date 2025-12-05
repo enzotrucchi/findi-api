@@ -25,6 +25,24 @@ class ProyectoRepository implements ProyectoRepositoryInterface
     }
 
     /**
+     * Obtener estadísticas
+     * Proyectos totales
+     * Proyectos activos
+     * 
+     * @return array<string, int>
+     */
+    public function obtenerEstadisticas(): array
+    {
+        $totalProyectos = $this->contarColeccion();
+        $proyectosActivos = $this->contarColeccion(true);
+
+        return [
+            'total_proyectos' => $totalProyectos,
+            'proyectos_activos' => $proyectosActivos,
+        ];
+    }
+
+    /**
      * Obtener proyectos activos (sin fecha de realización).
      *
      * @return Collection<int, Proyecto>

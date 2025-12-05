@@ -35,6 +35,14 @@ interface AsociadoRepositoryInterface
     public function obtenerAdministradores(): Collection;
 
     /**
+     * Obtener estadísticas de asociados.
+     *
+     * @return array<string, mixed>
+     */
+    public function obtenerEstadisticas(): array;
+
+
+    /**
      * Obtener un asociado por ID.
      *
      * @param int $id

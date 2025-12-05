@@ -64,6 +64,19 @@ class AsociadoService
     }
 
     /**
+     * Obtener estadísticas
+     * Asociados totales
+     * Asociados activos
+     */
+    public function obtenerEstadisticas(): array
+    {
+        $asociadosActivos = $this->asociadoRepository->contarColeccion(true);
+        return [
+            'asociados_activos' => $asociadosActivos,
+        ];
+    }
+
+    /**
      * Crear un nuevo asociado.
      *
      * @param CrearAsociadoDTO $dto
@@ -81,7 +94,7 @@ class AsociadoService
         $datosNormalizados = [
             'nombre' => $this->normalizarNombre($dto->nombre),
             'email' => strtolower(trim($dto->email)),
-            'telefono' => $this->normalizarTelefono($dto->telefono),
+            'telefono' => $dto->telefono ? $this->normalizarTelefono($dto->telefono) : null,
             'domicilio' => $dto->domicilio ? trim($dto->domicilio) : null,
         ];
 

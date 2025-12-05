@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\OrganizacionController;
 use App\Http\Controllers\Api\ProyectoController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CambiarOrganizacionSeleccionadaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,9 @@ Route::post('auth/crear-cuenta', [AuthController::class, 'crearCuenta']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    Route::post('organizaciones/{organizacion}/seleccionar', CambiarOrganizacionSeleccionadaController::class);
+
+
     /*
 |--------------------------------------------------------------------------
 | Rutas de Proveedores
@@ -50,6 +54,8 @@ Route::middleware('auth:sanctum')->group(function () {
 |--------------------------------------------------------------------------
 */
 
+    Route::get('asociados/estadisticas', [AsociadoController::class, 'obtenerEstadisticas']);
+
     Route::get('asociados', [AsociadoController::class, 'obtenerColeccion']);
     Route::post('asociados', [AsociadoController::class, 'crear']);
     Route::get('asociados/{id}', [AsociadoController::class, 'obtener']);
@@ -66,6 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
 | Rutas de Movimientos
 |--------------------------------------------------------------------------
 */
+
+    Route::get('movimientos/balance', [MovimientoController::class, 'obtenerBalance']);
 
     Route::get('movimientos', [MovimientoController::class, 'obtenerColeccion']);
     Route::post('movimientos', [MovimientoController::class, 'crear']);
@@ -100,6 +108,8 @@ Route::middleware('auth:sanctum')->group(function () {
 | Rutas de Proyectos
 |--------------------------------------------------------------------------
 */
+
+    Route::get('proyectos/estadisticas', [ProyectoController::class, 'obtenerEstadisticas']);
 
     Route::get('proyectos', [ProyectoController::class, 'obtenerColeccion']);
     Route::post('proyectos', [ProyectoController::class, 'crear']);

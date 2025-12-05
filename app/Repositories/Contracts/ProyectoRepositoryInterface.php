@@ -21,6 +21,15 @@ interface ProyectoRepositoryInterface
     public function obtenerColeccion(): Collection;
 
     /**
+     * Obtener estadísticas
+     * Proyectos totales
+     * Proyectos activos
+     * 
+     * @return array<string, int>
+     */
+    public function obtenerEstadisticas(): array;
+
+    /**
      * Obtener proyectos activos (sin fecha de realización).
      *
      * @return Collection<int, Proyecto>

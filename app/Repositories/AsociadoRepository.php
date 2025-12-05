@@ -4,66 +4,109 @@ namespace App\Repositories;
 
 use App\Models\Asociado;
 use App\Repositories\Contracts\AsociadoRepositoryInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Auth;
 
 /**
- * Implementación del repositorio de Asociados
- * 
- * Maneja todas las operaciones de acceso a datos de asociados.
- * No contiene lógica de negocio.
+ * Implementación del repositorio de Asociados.
+ *
+ * Acá se centraliza el filtrado por organización seleccionada.
+ * IMPORTANTE: no usar Asociado::... directo en otros lados
+ * si necesitás respetar el contexto de organización.
  */
 class AsociadoRepository implements AsociadoRepositoryInterface
 {
     /**
-     * Obtener todos los asociados.
+     * Query base de asociados ligados a la organización seleccionada
+     * del usuario autenticado.
      *
-     * @return Collection<int, Asociado>
+     * - Filtra por organizacion_seleccionada_id del usuario.
+     * - Exige que la relación en el pivot esté activa (asociado_organizacion.activo = true).
+     *
+     * @return Builder
      */
-    public function obtenerColeccion(): Collection
+    private function queryPorOrganizacionSeleccionada(): Builder
     {
-        return Asociado::orderBy('nombre')->get();
+        /** @var \App\Models\Asociado|null $user */
+        $user = Auth::guard('sanctum')->user() ?? Auth::user();
+
+        if (! $user instanceof Asociado) {
+            abort(401, 'No autenticado.');
+        }
+
+        $orgId = $user->organizacion_seleccionada_id;
+
+        if (! $orgId) {
+            abort(403, 'No hay organización seleccionada.');
+        }
+
+        return Asociado::whereHas('organizaciones', function (Builder $q) use ($orgId) {
+            $q->where('organizacion_id', $orgId)
+                ->where('asociado_organizacion.activo', true); // membresía activa en esa organización
+        });
     }
 
     /**
-     * Obtener asociados activos.
+     * Obtener todos los asociados de la organización seleccionada.
      *
-     * @return Collection<int, Asociado>
+     * @return Collection<int,Asociado>
      */
-    public function obtenerActivos(): Collection
+    public function obtenerColeccion(): Collection
     {
-        return Asociado::where('activo', true)
+        return $this->queryPorOrganizacionSeleccionada()
             ->orderBy('nombre')
             ->get();
     }
 
     /**
-     * Obtener asociados administradores.
+     * Obtener asociados activos (flag "activo" en la tabla asociados)
+     * de la organización seleccionada.
      *
-     * @return Collection<int, Asociado>
+     * @return Collection<int,Asociado>
      */
-    public function obtenerAdministradores(): Collection
+    public function obtenerActivos(): Collection
     {
-        return Asociado::where('es_admin', true)
+        return $this->queryPorOrganizacionSeleccionada()
             ->where('activo', true)
             ->orderBy('nombre')
             ->get();
     }
 
     /**
-     * Obtener un asociado por ID.
+     * Obtener asociados administradores de la organización seleccionada.
      *
-     * @param int $id
+     * @return Collection<int,Asociado>
+     */
+    public function obtenerAdministradores(): Collection
+    {
+        return $this->queryPorOrganizacionSeleccionada()
+            ->where('activo', true)
+            ->whereHas('organizaciones', function (Builder $q) {
+                $q->where('asociado_organizacion.es_admin', true);
+            })
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    /**
+     * Obtener un asociado por ID dentro de la organización seleccionada.
+     *
+     * @param  int  $id
      * @return Asociado|null
      */
     public function obtenerPorId(int $id): ?Asociado
     {
-        return Asociado::find($id);
+        return $this->queryPorOrganizacionSeleccionada()
+            ->where('id', $id)
+            ->first();
     }
 
     /**
-     * Crear un nuevo asociado.
+     * Crear un nuevo asociado (sin asignar organización).
+     * La vinculación a organizaciones se hace en otro servicio.
      *
-     * @param array<string, mixed> $datos
+     * @param  array<string,mixed>  $datos
      * @return Asociado
      */
     public function crear(array $datos): Asociado
@@ -72,17 +115,17 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     }
 
     /**
-     * Actualizar un asociado existente.
+     * Actualizar un asociado existente (respetando organización seleccionada).
      *
-     * @param int $id
-     * @param array<string, mixed> $datos
+     * @param  int  $id
+     * @param  array<string,mixed>  $datos
      * @return bool
      */
     public function actualizar(int $id, array $datos): bool
     {
         $asociado = $this->obtenerPorId($id);
 
-        if (!$asociado) {
+        if (! $asociado) {
             return false;
         }
 
@@ -90,16 +133,16 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     }
 
     /**
-     * Eliminar un asociado.
+     * Eliminar un asociado (respetando organización seleccionada).
      *
-     * @param int $id
+     * @param  int  $id
      * @return bool
      */
     public function eliminar(int $id): bool
     {
         $asociado = $this->obtenerPorId($id);
 
-        if (!$asociado) {
+        if (! $asociado) {
             return false;
         }
 
@@ -107,30 +150,34 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     }
 
     /**
-     * Buscar asociados por término.
+     * Buscar asociados por término dentro de la organización seleccionada.
      *
-     * @param string $termino
-     * @return Collection<int, Asociado>
+     * @param  string  $termino
+     * @return Collection<int,Asociado>
      */
     public function buscar(string $termino): Collection
     {
-        return Asociado::where('nombre', 'like', "%{$termino}%")
-            ->orWhere('email', 'like', "%{$termino}%")
-            ->orWhere('telefono', 'like', "%{$termino}%")
+        return $this->queryPorOrganizacionSeleccionada()
+            ->where(function (Builder $q) use ($termino) {
+                $q->where('nombre', 'like', "%{$termino}%")
+                    ->orWhere('email', 'like', "%{$termino}%")
+                    ->orWhere('telefono', 'like', "%{$termino}%");
+            })
             ->orderBy('nombre')
             ->get();
     }
 
     /**
-     * Verificar si un email ya existe.
+     * Verificar si un email ya existe en TODO el sistema (global, sin organización).
      *
-     * @param string $email
-     * @param int|null $excluirId ID a excluir de la búsqueda (para actualizaciones)
+     * @param  string     $email
+     * @param  int|null   $excluirId
      * @return bool
      */
     public function existeEmail(string $email, ?int $excluirId = null): bool
     {
-        $query = Asociado::where('email', $email);
+        $query = Asociado::query()
+            ->where('email', $email);
 
         if ($excluirId !== null) {
             $query->where('id', '!=', $excluirId);
@@ -140,42 +187,63 @@ class AsociadoRepository implements AsociadoRepositoryInterface
     }
 
     /**
-     * Obtener asociados por múltiples IDs.
+     * Obtener asociados por múltiples IDs dentro de la organización seleccionada.
      *
-     * @param array<int> $ids
-     * @return Collection<int, Asociado>
+     * @param  array<int>  $ids
+     * @return Collection<int,Asociado>
      */
     public function obtenerPorIds(array $ids): Collection
     {
-        return Asociado::whereIn('id', $ids)
+        return $this->queryPorOrganizacionSeleccionada()
+            ->whereIn('id', $ids)
             ->orderBy('nombre')
             ->get();
     }
 
     /**
-     * Verificar si existe un asociado por ID.
+     * Obtener estadísticas de asociados dentro de la organización seleccionada.
      *
-     * @param int $id
+     * @return array<string,mixed>
+     */
+    public function obtenerEstadisticas(): array
+    {
+        $queryBase = $this->queryPorOrganizacionSeleccionada();
+
+        $total   = (clone $queryBase)->count();
+        $activos = (clone $queryBase)->where('activo', true)->count();
+
+        return [
+            'asociados_totales' => $total,
+            'asociados_activos' => $activos,
+        ];
+    }
+
+    /**
+     * Verificar si existe un asociado por ID dentro de la organización seleccionada.
+     *
+     * @param  int  $id
      * @return bool
      */
     public function existePorId(int $id): bool
     {
-        return Asociado::where('id', $id)->exists();
+        return $this->queryPorOrganizacionSeleccionada()
+            ->where('id', $id)
+            ->exists();
     }
 
     /**
-     * Contar total de asociados.
+     * Contar total de asociados dentro de la organización seleccionada.
      *
-     * @param bool $soloActivos
+     * @param  bool  $soloActivos
      * @return int
      */
     public function contarColeccion(bool $soloActivos = false): int
     {
-        $query = Asociado::query();
+        $query = $this->queryPorOrganizacionSeleccionada();
 
-        if ($soloActivos) {
-            $query->where('activo', true);
-        }
+        // if ($soloActivos) {
+        //     $query->where('activo', true);
+        // }
 
         return $query->count();
     }

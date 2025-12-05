@@ -46,6 +46,23 @@ class ProyectoService
         return $proyectos->map(fn($proyecto) => ProyectoDTO::desdeModelo($proyecto));
     }
 
+
+    /**
+     * Obtener estadísticas
+     * Proyectos totales
+     * Proyectos activos
+     */
+    public function obtenerEstadisticas(): array
+    {
+        $totalProyectos = $this->proyectoRepository->contarColeccion();
+        $proyectosActivos = $this->proyectoRepository->contarColeccion(true);
+
+        return [
+            'total_proyectos' => $totalProyectos,
+            'proyectos_activos' => $proyectosActivos,
+        ];
+    }
+
     /**
      * Obtener un proyecto por ID.
      *

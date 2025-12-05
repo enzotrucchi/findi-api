@@ -6,8 +6,10 @@ use App\DTOs\Asociado\CrearAsociadoDTO;
 use App\DTOs\Organizacion\CrearOrganizacionDTO;
 use App\Http\Controllers\Controller;
 use App\Models\Asociado;
+use App\Models\Organizacion;
 use App\Services\AsociadoService;
 use App\Services\OrganizacionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -29,10 +31,11 @@ class AuthController extends Controller
      * - Valida id_token
      * - Si el email NO existe -> NO crea asociado, solo indica que debe ir a signup
      * - Si el email existe:
-     *      - Revisa organizaciones vinculadas
+     *      - Revisa organizaciones vinculadas (solo activas)
+     *      - Resuelve organización seleccionada
      *      - Devuelve token + status de flujo para el front
      */
-    public function googleLogin(Request $request)
+    public function googleLogin(Request $request): JsonResponse
     {
         $request->validate([
             'id_token' => 'required|string',
@@ -50,7 +53,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $email = $payload['email'];
+        $email        = $payload['email'];
         $nombreGoogle = $payload['name'] ?? $email;
 
         // 3) Buscar asociado por email (NO crear si no existe)
@@ -58,43 +61,48 @@ class AuthController extends Controller
         $asociado = Asociado::where('email', $email)->first();
 
         if (! $asociado) {
-            // Usuario nuevo: no hay asociado todavía → NO insertamos nada
-            // Front debe ir al flujo de "crear cuenta" con este mail
+            // Usuario nuevo: no hay asociado todavía → flujo de signup
             return response()->json([
-                'token'         => null,
-                'user'          => [
+                'token'                        => null,
+                'usuario'                      => [
                     'id'    => null,
                     'name'  => $nombreGoogle,
                     'email' => $email,
                 ],
-                'status'        => 'NEEDS_SIGNUP_FORM',
-                'organizations' => [],
-                'message'       => null,
+                'status'                       => 'NEEDS_SIGNUP_FORM',
+                'organizaciones'               => [],
+                'message'                      => null,
+                'organizacion_seleccionada_id' => null,
             ]);
         }
 
-        // 4) Asociado existente: podemos actualizar algunos datos de perfil si querés
+        // 4) Actualizar algunos datos del perfil
         $asociado->nombre    = $nombreGoogle;
         $asociado->google_id = $payload['sub'] ?? $asociado->google_id;
         $asociado->save();
 
-        // 5) Obtener organizaciones activas del asociado
-        $organizaciones = $asociado->organizaciones()
-            ->wherePivot('activo', true)
-            ->get();
+        // 5) Cargar organizaciones (con pivot) y filtrar solo las activas en pivot
+        $asociado->load('organizaciones');
+        $organizacionesActivas = $asociado->organizaciones
+            ->filter(fn($org) => (bool) $org->pivot->activo);
 
-        $orgCount  = $organizaciones->count();
-        $adminOrgs = $organizaciones->filter(fn($org) => (bool) $org->pivot->es_admin);
+        $orgCount  = $organizacionesActivas->count();
+        $adminOrgs = $organizacionesActivas->filter(
+            fn($org) => (bool) $org->pivot->es_admin
+        );
 
-        // 6) Determinar status del flujo
+        // 6) Resolver organización seleccionada (solo entre activas)
+        $orgSeleccionada = $this->resolveOrganizacionSeleccionadaForAsociado($asociado);
+
+        // 7) Determinar status del flujo
         $status  = 'NEEDS_SIGNUP_FORM';
         $message = null;
 
         if ($orgCount === 0) {
-            // Asociado sin organizaciones → tratamos como "debe crear organización"
+            // No tiene organizaciones activas → lo tratamos como que debe crear org
             $status = 'NEEDS_SIGNUP_FORM';
         } elseif ($orgCount === 1) {
-            $org = $organizaciones->first();
+            $org = $organizacionesActivas->first();
             if ($org->pivot->es_admin) {
                 $status = 'DIRECT_LOGIN';
             } else {
@@ -102,7 +110,7 @@ class AuthController extends Controller
                 $message = 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.';
             }
         } else {
-            // Tiene 2+ organizaciones
+            // Tiene 2+ organizaciones activas
             if ($adminOrgs->count() === 0) {
                 $status  = 'ASSOCIATE_ONLY';
                 $message = 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.';
@@ -111,29 +119,33 @@ class AuthController extends Controller
             }
         }
 
-        // 7) Crear token de acceso (Sanctum)
+        // 8) Crear token de acceso (Sanctum)
         $token = $asociado->createToken('findi-pwa')->plainTextToken;
 
-        // 8) Mapear organizaciones para el front
-        $organizationsPayload = $organizaciones->map(function ($org) {
+        // 9) Mapear organizaciones activas para el front
+        $organizationsPayload = $organizacionesActivas->map(function ($org) {
             return [
-                'id'   => $org->id,
-                'name' => $org->nombre,
-                'role' => $org->pivot->es_admin ? 'admin' : 'associate',
+                'id'               => $org->id,
+                'nombre'           => $org->nombre,
+                'fecha_alta'       => $org->fecha_alta,
+                'es_prueba'        => (bool) $org->es_prueba,
+                'fecha_fin_prueba' => $org->fecha_fin_prueba,
+                'es_admin'         => (bool) $org->pivot->es_admin,
+                'activo'           => (bool) $org->pivot->activo,
             ];
         })->values()->all();
 
-        // 9) Responder al front
         return response()->json([
-            'token'         => $token,
-            'user'          => [
-                'id'    => $asociado->id,
-                'name'  => $asociado->nombre,
-                'email' => $asociado->email,
+            'token'                        => $token,
+            'usuario'                      => [
+                'id'     => $asociado->id,
+                'nombre' => $asociado->nombre,
+                'email'  => $asociado->email,
             ],
-            'status'        => $status,
-            'organizations' => $organizationsPayload,
-            'message'       => $message,
+            'status'                       => $status,
+            'organizaciones'               => $organizationsPayload,
+            'message'                      => $message,
+            'organizacion_seleccionada_id' => $asociado->organizacion_seleccionada_id,
         ]);
     }
 
@@ -168,14 +180,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Crea una cuenta
-     * Da de alta la organización.
-     * Se crea un asociado vinculado a la organización en asociado_organizacion como admin.
-     *
-     * IMPORTANTE: acá sí se da de alta el Asociado, ya que al llegar a este
-     * punto el usuario eligió "Crear cuenta" y completó nombre + organización.
+     * Crea una cuenta:
+     * - Da de alta la organización.
+     * - Crea un asociado.
+     * - Vincula el asociado a la organización (pivot) como admin y activo.
+     * - Marca esa organización como seleccionada en el asociado.
      */
-    public function crearCuenta(Request $request)
+    public function crearCuenta(Request $request): JsonResponse
     {
         // Validar datos de entrada
         $validated = $request->validate([
@@ -185,7 +196,6 @@ class AuthController extends Controller
         ]);
 
         try {
-            // Ejecutar toda la lógica dentro de una transacción
             $resultado = DB::transaction(function () use ($validated) {
                 // 1. Crear la organización usando el servicio
                 $organizacionDTO = new CrearOrganizacionDTO(
@@ -195,6 +205,7 @@ class AuthController extends Controller
                     fechaFinPrueba: now()->addDays(5)->format('Y-m-d')
                 );
 
+                /** @var \App\Models\Organizacion $organizacion */
                 $organizacion = $this->organizacionService->crear($organizacionDTO);
 
                 // 2. Crear el asociado usando el servicio
@@ -203,17 +214,24 @@ class AuthController extends Controller
                     email: $validated['email'],
                 );
 
+                /** @var \App\Models\Asociado $asociado */
                 $asociado = $this->asociadoService->crear($asociadoDTO);
 
-                // 3. Vincular el asociado con la organización en la tabla pivot
                 $asociadoModel = Asociado::findOrFail($asociado->id);
+
+                // 3. Vincular el asociado con la organización en la tabla pivot
                 $asociadoModel->organizaciones()->attach($organizacion->id, [
                     'fecha_alta' => now()->format('Y-m-d'),
-                    'activo'     => true,
-                    'es_admin'   => true,
+                    'fecha_baja' => null,
+                    'activo'     => true,   // membresía activa
+                    'es_admin'   => true,   // es admin de esa organización
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                // 4. Marcar la organización como seleccionada en el asociado
+                $asociadoModel->organizacion_seleccionada_id = $organizacion->id;
+                $asociadoModel->save();
 
                 return [
                     'organizacion' => $organizacion,
@@ -221,10 +239,9 @@ class AuthController extends Controller
                 ];
             });
 
-            // (Opcional) Crear token para loguear al usuario inmediatamente después del signup
+            // Crear token para loguear al usuario inmediatamente después del signup
             $token = $resultado['asociado']->createToken('findi-pwa')->plainTextToken;
 
-            // Responder con los datos creados
             return response()->json([
                 'message' => 'Cuenta creada exitosamente',
                 'data'    => [
@@ -233,25 +250,69 @@ class AuthController extends Controller
                         'nombre' => $resultado['organizacion']->nombre,
                     ],
                     'asociado'     => [
-                        'id'    => $resultado['asociado']->id,
+                        'id'     => $resultado['asociado']->id,
                         'nombre' => $resultado['asociado']->nombre,
-                        'email' => $resultado['asociado']->email,
+                        'email'  => $resultado['asociado']->email,
                     ],
-                    'token' => $token,
+                    'token'                        => $token,
+                    'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
                 ],
             ], 201);
         } catch (\InvalidArgumentException $e) {
-            // Errores de validación de negocio
             return response()->json([
                 'message' => 'Error en la validación',
                 'error'   => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
-            // Cualquier otro error
             return response()->json([
                 'message' => 'Error al crear la cuenta',
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Resuelve y setea la organización seleccionada del asociado.
+     *
+     * - Solo puede ser una organización donde el pivot exista y esté activo = true.
+     * - Si ya tiene una seleccionada válida, la mantiene.
+     * - Si no tiene, elige una por defecto (admin si hay, sino la primera activa).
+     */
+    protected function resolveOrganizacionSeleccionadaForAsociado(Asociado $asociado): ?Organizacion
+    {
+        $asociado->loadMissing('organizaciones');
+
+        // Solo organizaciones con membresía activa
+        $activas = $asociado->organizaciones->filter(
+            fn($org) => (bool) $org->pivot->activo
+        );
+
+        if ($activas->isEmpty()) {
+            $asociado->organizacion_seleccionada_id = null;
+            $asociado->save();
+
+            return null;
+        }
+
+        // Si ya tiene seleccionada y está entre las activas, la respetamos
+        if ($asociado->organizacion_seleccionada_id) {
+            $orgSeleccionada = $activas->firstWhere(
+                'id',
+                $asociado->organizacion_seleccionada_id
+            );
+
+            if ($orgSeleccionada) {
+                return $orgSeleccionada;
+            }
+        }
+
+        // Elegimos una por defecto: primero admin, si no la primera activa
+        $org = $activas->firstWhere(fn($org) => (bool) $org->pivot->es_admin)
+            ?? $activas->first();
+
+        $asociado->organizacion_seleccionada_id = $org?->id;
+        $asociado->save();
+
+        return $org;
     }
 }

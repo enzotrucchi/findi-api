@@ -84,6 +84,23 @@ class MovimientoService
     }
 
     /**
+     * Obtener el balance total de movimientos.
+     *
+     * @return array<string, float>
+     */
+    public function obtenerBalance(): array
+    {
+        $ingresos = $this->movimientoRepository->obtenerSumaPorTipo('ingreso');
+        $egresos = $this->movimientoRepository->obtenerSumaPorTipo('egreso');
+
+        return [
+            'ingresos' => $ingresos,
+            'egresos' => $egresos,
+            'balance' => $ingresos - $egresos,
+        ];
+    }
+
+    /**
      * Crear un nuevo movimiento.
      *
      * @param CrearMovimientoDTO $dto

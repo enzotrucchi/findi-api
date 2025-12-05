@@ -72,6 +72,16 @@ class MovimientoRepository implements MovimientoRepositoryInterface
             ->get();
     }
 
+
+    /**
+     * Obtener suma por tipo
+     */
+    public function obtenerSumaPorTipo(string $tipo): float
+    {
+        return Movimiento::where('tipo', $tipo)->sum('monto');
+    }
+
+
     /**
      * Obtener movimientos por status.
      *
