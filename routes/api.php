@@ -94,7 +94,6 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 
     Route::get('asociados/estadisticas', [AsociadoController::class, 'obtenerEstadisticas']);
-
     Route::get('asociados', [AsociadoController::class, 'obtenerColeccion']);
     Route::post('asociados', [AsociadoController::class, 'crear']);
     Route::put('asociados/{id}', [AsociadoController::class, 'actualizar']);
@@ -109,18 +108,10 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 
     Route::get('movimientos/balance', [MovimientoController::class, 'obtenerBalance']);
-
     Route::get('movimientos', [MovimientoController::class, 'obtenerColeccion']);
     Route::post('movimientos', [MovimientoController::class, 'crear']);
     Route::put('movimientos/{id}', [MovimientoController::class, 'actualizar']);
     Route::delete('movimientos/{id}', [MovimientoController::class, 'eliminar']);
-
-    // Route::patch('movimientos/{id}', [MovimientoController::class, 'actualizar']);
-    // Route::get('movimientos/{id}', [MovimientoController::class, 'obtener']);
-    // Route::get('movimientos/buscar', [MovimientoController::class, 'buscar']);
-    // Route::get('movimientos/contar', [MovimientoController::class, 'contar']);
-    // Route::post('movimientos/por-ids', [MovimientoController::class, 'obtenerPorIds']);
-    // Route::get('movimientos/existe/{id}', [MovimientoController::class, 'existe']);
 
     /*
 |--------------------------------------------------------------------------

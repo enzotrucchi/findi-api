@@ -14,7 +14,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Asociado extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
-    // use \App\Models\Traits\TieneOrganizacionSeleccionadaScopeAsociado;
 
     /**
      * Los atributos que son asignables en masa.
