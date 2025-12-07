@@ -2,46 +2,44 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\Asociado\ActualizarAsociadoDTO;
-use App\DTOs\Asociado\CrearAsociadoDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Services\AsociadoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
+use App\DTOs\Asociado\FiltroAsociadoDTO;
+use App\Models\Asociado;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Asociado\AsociadoRequest;
+use App\DTOs\Asociado\AsociadoDTO;
 
 class AsociadoController extends Controller
 {
     public function __construct(private AsociadoService $asociadoService) {}
 
-    public function obtenerColeccion(Request $request): JsonResponse
+    /**
+     * Obtener colección de asociados (paginada) de la organización seleccionada.
+     *
+     * @return LengthAwarePaginator
+     */
+    public function obtenerColeccion(FiltroAsociadoDTO $filtroDTO): JsonResponse
     {
         try {
-            $soloActivos = (bool) $request->query('activos', false);
-            $soloAdmins = (bool) $request->query('solo_admins', false);
+            // Por ahora el DTO está vacío, pero acá podrías mapear query params:
+            // $filtroDTO = new FiltroAsociadoDTO(
+            //     soloActivos: (bool) $request->query('solo_activos', false),
+            //     soloAdmins: (bool) $request->query('solo_admins', false),
+            // );
+            $filtroDTO = new FiltroAsociadoDTO();
 
-            $asociados = $this->asociadoService->obtenerColeccion($soloActivos, $soloAdmins);
-            $datos = $asociados->map(fn($dto) => $dto->aArray());
+            $asociados = $this->asociadoService->obtenerColeccion($filtroDTO);
 
-            return ApiResponse::exito($datos, 'Asociados obtenidos exitosamente');
+            return ApiResponse::exito($asociados, 'Asociados obtenidos exitosamente');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function obtener(int $id): JsonResponse
-    {
-        try {
-            $asociado = $this->asociadoService->obtenerPorId($id);
-
-            if (!$asociado) {
-                return ApiResponse::noEncontrado('Asociado no encontrado');
-            }
-
-            return ApiResponse::exito($asociado->aArray(), 'Asociado obtenido exitosamente');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener asociado: ' . $e->getMessage(), 500);
         }
     }
 
@@ -55,13 +53,14 @@ class AsociadoController extends Controller
         }
     }
 
-    public function crear(Request $request): JsonResponse
+    public function crear(AsociadoRequest $request): JsonResponse
     {
         try {
-            $dto = CrearAsociadoDTO::desdeArray($request->all());
+            $dto = AsociadoDTO::desdeArray($request->validated());
+
             $asociado = $this->asociadoService->crear($dto);
 
-            return ApiResponse::creado($asociado->aArray(), 'Asociado creado exitosamente');
+            return ApiResponse::creado($asociado, 'Asociado creado exitosamente');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
@@ -69,17 +68,18 @@ class AsociadoController extends Controller
         }
     }
 
-    public function actualizar(Request $request, int $id): JsonResponse
+    public function actualizar(int $id, AsociadoRequest $request): JsonResponse
     {
         try {
-            $dto = ActualizarAsociadoDTO::desdeArray($request->all());
+            $dto = AsociadoDTO::desdeArray($request->validated());
+
             $asociado = $this->asociadoService->actualizar($id, $dto);
 
             if (!$asociado) {
                 return ApiResponse::noEncontrado('Asociado no encontrado');
             }
 
-            return ApiResponse::exito($asociado->aArray(), 'Asociado actualizado exitosamente');
+            return ApiResponse::exito($asociado, 'Asociado actualizado exitosamente');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
@@ -87,66 +87,33 @@ class AsociadoController extends Controller
         }
     }
 
-    public function eliminar(int $id): JsonResponse
+    public function activar(int $id): JsonResponse
     {
         try {
-            $eliminado = $this->asociadoService->eliminar($id);
+            $asociado = $this->asociadoService->activar($id);
 
-            if (!$eliminado) {
+            if (!$asociado) {
                 return ApiResponse::noEncontrado('Asociado no encontrado');
             }
 
-            return ApiResponse::exito(null, 'Asociado eliminado exitosamente');
+            return ApiResponse::exito($asociado, 'Asociado activado exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Error al activar asociado: ' . $e->getMessage(), 500);
         }
     }
 
-    public function buscar(Request $request): JsonResponse
+    public function desactivar(int $id): JsonResponse
     {
         try {
-            $termino = $request->query('q') ?? $request->query('busqueda');
+            $asociado = $this->asociadoService->desactivar($id);
 
-            if (!$termino) {
-                return ApiResponse::error('Falta término de búsqueda', 400);
+            if (!$asociado) {
+                return ApiResponse::noEncontrado('Asociado no encontrado');
             }
 
-            $resultados = $this->asociadoService->buscar($termino)->map(fn($dto) => $dto->aArray());
-            return ApiResponse::exito($resultados, 'Búsqueda completada');
+            return ApiResponse::exito($asociado, 'Asociado desactivado exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error en la búsqueda: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function contar(Request $request): JsonResponse
-    {
-        try {
-            $soloActivos = (bool) $request->query('activos', false);
-            $cantidad = $this->asociadoService->contar($soloActivos);
-            return ApiResponse::exito(['cantidad' => $cantidad], 'Conteo realizado');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al contar asociados: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function obtenerPorIds(Request $request): JsonResponse
-    {
-        try {
-            $ids = $request->input('ids', []);
-            $coleccion = $this->asociadoService->obtenerPorIds((array) $ids)->map(fn($dto) => $dto->aArray());
-            return ApiResponse::exito($coleccion, 'Asociados obtenidos por ids');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener por ids: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function existe(int $id): JsonResponse
-    {
-        try {
-            $existe = $this->asociadoService->existePorId($id);
-            return ApiResponse::exito(['existe' => $existe], 'Verificación completada');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al verificar existencia: ' . $e->getMessage(), 500);
+            return ApiResponse::error('Error al desactivar asociado: ' . $e->getMessage(), 500);
         }
     }
 }

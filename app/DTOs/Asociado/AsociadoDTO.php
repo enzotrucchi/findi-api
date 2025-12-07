@@ -2,63 +2,58 @@
 
 namespace App\DTOs\Asociado;
 
-use App\Models\Asociado;
-
 /**
- * DTO para Asociado
+ * DTO para creación de Asociado
  * 
- * Objeto de transferencia de datos inmutable para representar
- * un asociado en las respuestas de la API.
+ * Encapsula los datos necesarios para crear un nuevo asociado.
  */
 class AsociadoDTO
 {
     /**
-     * Constructor privado para forzar el uso de métodos factory.
+     * Constructor.
+     *
+     * @param string $nombre
+     * @param string $email
+     * @param string $telefono
+     * @param string|null $domicilio
+     * @param bool $esAdmin
+     * @param bool $activo
      */
-    private function __construct(
-        public readonly int $id,
+    public function __construct(
         public readonly string $nombre,
         public readonly string $email,
-        public readonly ?string $telefono,
-        public readonly ?string $domicilio,
-        public readonly string $fechaCreacion,
-        public readonly string $fechaActualizacion,
+        public readonly ?string $telefono = null,
+        public readonly ?string $domicilio = null,
     ) {}
 
     /**
-     * Crear DTO desde un modelo Eloquent.
+     * Crear DTO desde un array de datos.
      *
-     * @param Asociado $asociado
+     * @param array<string, mixed> $datos
      * @return self
      */
-    public static function desdeModelo(Asociado $asociado): self
+    public static function desdeArray(array $datos): self
     {
         return new self(
-            id: $asociado->id,
-            nombre: $asociado->nombre,
-            email: $asociado->email,
-            telefono: $asociado->telefono,
-            domicilio: $asociado->domicilio,
-            fechaCreacion: $asociado->created_at->toIso8601String(),
-            fechaActualizacion: $asociado->updated_at->toIso8601String(),
+            nombre: $datos['nombre'],
+            email: $datos['email'],
+            telefono: $datos['telefono'] ?? null,
+            domicilio: $datos['domicilio'] ?? null,
         );
     }
 
     /**
-     * Convertir DTO a array.
+     * Convertir DTO a array para almacenamiento.
      *
      * @return array<string, mixed>
      */
     public function aArray(): array
     {
         return [
-            'id' => $this->id,
             'nombre' => $this->nombre,
             'email' => $this->email,
             'telefono' => $this->telefono,
             'domicilio' => $this->domicilio,
-            'fechaCreacion' => $this->fechaCreacion,
-            'fechaActualizacion' => $this->fechaActualizacion,
         ];
     }
 }
