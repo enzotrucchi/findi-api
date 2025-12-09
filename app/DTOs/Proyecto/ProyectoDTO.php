@@ -18,7 +18,7 @@ class ProyectoDTO
     private function __construct(
         public readonly int $id,
         public readonly string $descripcion,
-        public readonly float $montoActual,
+        public readonly ?float $montoActual = null,
         public readonly float $montoObjetivo,
         public readonly string $fechaAlta,
         public readonly ?string $fechaRealizacion,
@@ -43,6 +43,20 @@ class ProyectoDTO
             fechaRealizacion: $proyecto->fecha_realizacion,
             fechaCreacion: $proyecto->created_at->toIso8601String(),
             fechaActualizacion: $proyecto->updated_at->toIso8601String(),
+        );
+    }
+
+    public static function desdeArray(array $datos): self
+    {
+        return new self(
+            id: $datos['id'] ?? 0,
+            descripcion: $datos['descripcion'],
+            montoActual: $datos['monto_actual'] ?? null,
+            montoObjetivo: $datos['monto_objetivo'],
+            fechaAlta: $datos['fecha_alta'],
+            fechaRealizacion: $datos['fecha_realizacion'] ?? null,
+            fechaCreacion: $datos['fecha_creacion'] ?? now()->toIso8601String(),
+            fechaActualizacion: $datos['fecha_actualizacion'] ?? now()->toIso8601String(),
         );
     }
 

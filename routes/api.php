@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AsociadoController;
 use App\Http\Controllers\Api\MovimientoController;
 use App\Http\Controllers\Api\OrganizacionController;
 use App\Http\Controllers\Api\ProyectoController;
+use App\Http\Controllers\Api\ProyectoComentarioController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CambiarOrganizacionSeleccionadaController;
 use Illuminate\Http\Request;
@@ -84,9 +85,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('proveedores/{id}', [ProveedorController::class, 'actualizar']);
     Route::delete('proveedores/{id}', [ProveedorController::class, 'eliminar']);
 
-    // Route::get('proveedores/{id}', [ProveedorController::class, 'obtener']);
-    // Route::patch('proveedores/{id}', [ProveedorController::class, 'actualizar']);
-
     /*
 |--------------------------------------------------------------------------
 | Rutas de Asociados
@@ -122,13 +120,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('organizaciones', [OrganizacionController::class, 'obtenerColeccion']);
     Route::post('organizaciones', [OrganizacionController::class, 'crear']);
     Route::get('organizaciones/{id}', [OrganizacionController::class, 'obtener']);
-    Route::put('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
-    Route::patch('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
+    // Route::put('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
     Route::delete('organizaciones/{id}', [OrganizacionController::class, 'eliminar']);
-    Route::get('organizaciones/buscar', [OrganizacionController::class, 'buscar']);
-    Route::get('organizaciones/contar', [OrganizacionController::class, 'contar']);
-    Route::post('organizaciones/por-ids', [OrganizacionController::class, 'obtenerPorIds']);
-    Route::get('organizaciones/existe/{id}', [OrganizacionController::class, 'existe']);
 
     /*
 |--------------------------------------------------------------------------
@@ -137,16 +130,20 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 
     Route::get('proyectos/estadisticas', [ProyectoController::class, 'obtenerEstadisticas']);
-
     Route::get('proyectos', [ProyectoController::class, 'obtenerColeccion']);
     Route::post('proyectos', [ProyectoController::class, 'crear']);
     Route::put('proyectos/{id}', [ProyectoController::class, 'actualizar']);
     Route::delete('proyectos/{id}', [ProyectoController::class, 'eliminar']);
 
-    // Route::get('proyectos/{id}', [ProyectoController::class, 'obtener']);
-    // Route::patch('proyectos/{id}', [ProyectoController::class, 'actualizar']);
-    // Route::get('proyectos/buscar', [ProyectoController::class, 'buscar']);
-    // Route::get('proyectos/contar', [ProyectoController::class, 'contar']);
-    // Route::post('proyectos/por-ids', [ProyectoController::class, 'obtenerPorIds']);
-    // Route::get('proyectos/existe/{id}', [ProyectoController::class, 'existe']);
+    /**
+     * Rutas adicionales de Proyectos: 
+     * Comentarios
+     * Movimientos por proyecto
+     */
+    Route::get('proyectos/{id}/comentarios', [ProyectoComentarioController::class, 'obtenerComentarios']);
+    Route::post('proyectos/{id}/comentarios', [ProyectoComentarioController::class, 'agregarComentario']);
+    Route::put('proyectos/{proyectoId}/comentarios/{comentarioId}', [ProyectoComentarioController::class, 'actualizarComentario']);
+    Route::delete('proyectos/{proyectoId}/comentarios/{comentarioId}', [ProyectoComentarioController::class, 'eliminarComentario']);
+
+    Route::get('proyectos/{id}/movimientos', [ProyectoController::class, 'obtenerMovimientos']);
 });

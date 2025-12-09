@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProyectoHistorial extends Model
+class ProyectoComentarios extends Model
 {
     use HasFactory;
 
-    // Porque la tabla no sigue el plural "historials"
-    protected $table = 'proyecto_historial';
+    protected $table = 'proyecto_comentarios';
 
     protected $fillable = [
         'proyecto_id',

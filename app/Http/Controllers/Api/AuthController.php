@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\Asociado\CrearAsociadoDTO;
-use App\DTOs\Organizacion\CrearOrganizacionDTO;
+use App\DTOs\Organizacion\OrganizacionDTO;
+use App\DTOs\Asociado\AsociadoDTO;
 use App\Http\Controllers\Controller;
 use App\Models\Asociado;
 use App\Models\Organizacion;
@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Log;
+
 
 class AuthController extends Controller
 {
@@ -198,7 +200,7 @@ class AuthController extends Controller
         try {
             $resultado = DB::transaction(function () use ($validated) {
                 // 1. Crear la organización usando el servicio
-                $organizacionDTO = new CrearOrganizacionDTO(
+                $organizacionDTO = new OrganizacionDTO(
                     nombre: $validated['nombre_organizacion'],
                     fechaAlta: now()->format('Y-m-d'),
                     esPrueba: true,
@@ -208,16 +210,19 @@ class AuthController extends Controller
                 /** @var \App\Models\Organizacion $organizacion */
                 $organizacion = $this->organizacionService->crear($organizacionDTO);
 
-                // 2. Crear el asociado usando el servicio
-                $asociadoDTO = new CrearAsociadoDTO(
-                    nombre: $validated['nombre_usuario'],
-                    email: $validated['email'],
-                );
+                // 2. Crear el asociado directamente (sin servicio, ya que no hay usuario autenticado)
+                $emailNormalizado = strtolower(trim($validated['email']));
 
-                /** @var \App\Models\Asociado $asociado */
-                $asociado = $this->asociadoService->crear($asociadoDTO);
+                // Verificar que no exista el email
+                if (Asociado::where('email', $emailNormalizado)->exists()) {
+                    throw new \InvalidArgumentException('El email ya está registrado.');
+                }
 
-                $asociadoModel = Asociado::findOrFail($asociado->id);
+                /** @var \App\Models\Asociado $asociadoModel */
+                $asociadoModel = Asociado::create([
+                    'nombre' => trim($validated['nombre_usuario']),
+                    'email' => $emailNormalizado,
+                ]);
 
                 // 3. Vincular el asociado con la organización en la tabla pivot
                 $asociadoModel->organizaciones()->attach($organizacion->id, [
@@ -264,6 +269,9 @@ class AuthController extends Controller
                 'error'   => $e->getMessage(),
             ], 422);
         } catch (\Exception $e) {
+            Log::error('Error al crear cuenta: ' . $e->getMessage(), [
+                'stack' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'message' => 'Error al crear la cuenta',
                 'error'   => $e->getMessage(),

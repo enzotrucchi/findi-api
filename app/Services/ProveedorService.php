@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
-use App\DTOs\Proveedor\ActualizarProveedorDTO;
-use App\DTOs\Proveedor\CrearProveedorDTO;
 use App\DTOs\Proveedor\ProveedorDTO;
-use App\Repositories\Contracts\ProveedorRepositoryInterface;
+use App\DTOs\Proveedor\FiltroProveedorDTO;
+use App\Services\Traits\ObtenerOrganizacionSeleccionada;
+use App\Models\Proveedor;
+use App\Models\Asociado;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
 
 /**
@@ -17,202 +20,198 @@ use InvalidArgumentException;
  */
 class ProveedorService
 {
+    use ObtenerOrganizacionSeleccionada;
+
     /**
      * Constructor.
      *
      */
-    // public function __construct() {}
+    public function __construct() {}
 
-    // /**
-    //  * Obtener todos los proveedores.
-    //  *
-    //  * @param bool $soloActivos
-    //  * @return Collection<int, ProveedorDTO>
-    //  */
-    // public function obtenerColeccion(bool $soloActivos = false): Collection
-    // {
-    //     $proveedores = $soloActivos
-    //         ? $this->proveedorRepository->obtenerActivos()
-    //         : $this->proveedorRepository->obtenerColeccion();
+    /**
+     * Obtener todos los proveedores.
+     *
+     * @param bool $soloActivos
+     * @return Collection<int, ProveedorDTO>
+     */
+    public function obtenerColeccion(bool $soloActivos = false): Collection
+    {
+        $query = Proveedor::query();
 
-    //     return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
-    // }
+        if ($soloActivos) {
+            $query->where('activo', true);
+        }
 
-    // /**
-    //  * Obtener un proveedor por ID.
-    //  *
-    //  * @param int $id
-    //  * @return ProveedorDTO|null
-    //  */
-    // public function obtenerPorId(int $id): ?ProveedorDTO
-    // {
-    //     $proveedor = $this->proveedorRepository->obtenerPorId($id);
+        $proveedores = $query->orderBy('nombre', 'asc')->get();
 
-    //     if (!$proveedor) {
-    //         return null;
-    //     }
+        return $proveedores;
+    }
 
-    //     return ProveedorDTO::desdeModelo($proveedor);
-    // }
+    /**
+     * Validar si existe un email para un proveedor en la organización.
+     *
+     * @param string $email
+     * @param int|null $exceptoId
+     * @return bool
+     */
+    private function existeEmail(string $email, ?int $exceptoId = null): bool
+    {
+        $query = Proveedor::query()
+            ->where('email', strtolower(trim($email)));
 
-    // /**
-    //  * Crear un nuevo proveedor.
-    //  *
-    //  * @param CrearProveedorDTO $dto
-    //  * @return ProveedorDTO
-    //  * @throws InvalidArgumentException
-    //  */
-    // public function crear(CrearProveedorDTO $dto): ProveedorDTO
-    // {
-    //     // Validar que el email no exista
-    //     if ($this->proveedorRepository->existeEmail($dto->email)) {
-    //         throw new InvalidArgumentException('El email ya está registrado.');
-    //     }
+        if ($exceptoId) {
+            $query->where('id', '!=', $exceptoId);
+        }
 
-    //     // Normalizar nombre (capitalizar palabras)
-    //     $datosNormalizados = [
-    //         'nombre' => $this->normalizarNombre($dto->nombre),
-    //         'email' => strtolower(trim($dto->email)),
-    //         'telefono' => $this->normalizarTelefono($dto->telefono),
-    //         'activo' => $dto->activo,
-    //     ];
+        return $query->exists();
+    }
 
-    //     $proveedor = DB::transaction(function () use ($datosNormalizados) {
-    //         return $this->proveedorRepository->crear($datosNormalizados);
-    //     });
+    /**
+     * Crear un nuevo proveedor.
+     *
+     * @param array<string, mixed> $datos
+     * @return ProveedorDTO
+     * @throws InvalidArgumentException
+     */
+    public function crear(ProveedorDTO $dto): Proveedor
+    {
+        $emailNormalizado = strtolower(trim($dto->email));
 
-    //     return ProveedorDTO::desdeModelo($proveedor);
-    // }
+        // Validar que el email no exista en esta organización
+        if ($this->existeEmail($emailNormalizado)) {
+            throw new InvalidArgumentException('El email ya está registrado en esta organización.');
+        }
 
-    // /**
-    //  * Actualizar un proveedor existente.
-    //  *
-    //  * @param int $id
-    //  * @param ActualizarProveedorDTO $dto
-    //  * @return ProveedorDTO|null
-    //  * @throws InvalidArgumentException
-    //  */
-    // public function actualizar(int $id, ActualizarProveedorDTO $dto): ?ProveedorDTO
-    // {
-    //     $proveedor = $this->proveedorRepository->obtenerPorId($id);
+        $orgId = $this->obtenerOrganizacionId();
 
-    //     if (!$proveedor) {
-    //         return null;
-    //     }
+        $proveedor = DB::transaction(function () use ($dto, $emailNormalizado, $orgId) {
+            return Proveedor::create([
+                'organizacion_id' => $orgId,
+                'nombre' => $this->normalizarNombre($dto->nombre),
+                'email' => $emailNormalizado,
+                'telefono' => $this->normalizarTelefono($dto->telefono),
+                'activo' => $dto->activo ?? true,
+            ]);
+        });
 
-    //     // Validar email si se está actualizando
-    //     if ($dto->email !== null && $this->proveedorRepository->existeEmail($dto->email, $id)) {
-    //         throw new InvalidArgumentException('El email ya está registrado.');
-    //     }
+        return $proveedor;
+    }
 
-    //     // Normalizar datos
-    //     $datosNormalizados = [];
+    /**
+     * Actualizar un proveedor existente.
+     *
+     * @param int $id
+     * @param array<string, mixed> $datos
+     * @return ProveedorDTO|null
+     * @throws InvalidArgumentException
+     */
+    public function actualizar(int $id, ProveedorDTO $dto): ?Proveedor
+    {
+        $query = Proveedor::query();
 
-    //     if ($dto->nombre !== null) {
-    //         $datosNormalizados['nombre'] = $this->normalizarNombre($dto->nombre);
-    //     }
+        $proveedor = $query->where('id', $id)
+            ->first();
 
-    //     if ($dto->email !== null) {
-    //         $datosNormalizados['email'] = strtolower(trim($dto->email));
-    //     }
+        if (!$proveedor) {
+            return null;
+        }
 
-    //     if ($dto->telefono !== null) {
-    //         $datosNormalizados['telefono'] = $this->normalizarTelefono($dto->telefono);
-    //     }
+        // Validar email si se está actualizando
+        if ($dto->email !== null && $this->existeEmail($dto->email, $id)) {
+            throw new InvalidArgumentException('El email ya está registrado en esta organización.');
+        }
 
-    //     if ($dto->activo !== null) {
-    //         $datosNormalizados['activo'] = $dto->activo;
-    //     }
+        // Normalizar datos
+        $datosNormalizados = [];
 
-    //     DB::transaction(function () use ($id, $datosNormalizados) {
-    //         $this->proveedorRepository->actualizar($id, $datosNormalizados);
-    //     });
+        if ($dto->nombre !== null) {
+            $datosNormalizados['nombre'] = $this->normalizarNombre($dto->nombre);
+        }
 
-    //     // Refrescar el modelo
-    //     $proveedorActualizado = $this->proveedorRepository->obtenerPorId($id);
+        if ($dto->email !== null) {
+            $datosNormalizados['email'] = strtolower(trim($dto->email));
+        }
 
-    //     return ProveedorDTO::desdeModelo($proveedorActualizado);
-    // }
+        if ($dto->telefono !== null) {
+            $datosNormalizados['telefono'] = $this->normalizarTelefono($dto->telefono);
+        }
 
-    // /**
-    //  * Eliminar un proveedor.
-    //  *
-    //  * @param int $id
-    //  * @return bool
-    //  */
-    // public function eliminar(int $id): bool
-    // {
-    //     return DB::transaction(function () use ($id) {
-    //         return $this->proveedorRepository->eliminar($id);
-    //     });
-    // }
+        if ($dto->activo !== null) {
+            $datosNormalizados['activo'] = $dto->activo;
+        }
 
-    // /**
-    //  * Buscar proveedores por término.
-    //  *
-    //  * @param string $termino
-    //  * @return Collection<int, ProveedorDTO>
-    //  */
-    // public function buscar(string $termino): Collection
-    // {
-    //     $proveedores = $this->proveedorRepository->buscar($termino);
+        DB::transaction(function () use ($proveedor, $datosNormalizados) {
+            $proveedor->update($datosNormalizados);
+        });
 
-    //     return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
-    // }
+        // Refrescar el modelo
+        return $proveedor->fresh();
+    }
 
-    // /**
-    //  * Obtener proveedores por múltiples IDs.
-    //  *
-    //  * @param array<int> $ids
-    //  * @return Collection<int, ProveedorDTO>
-    //  */
-    // public function obtenerPorIds(array $ids): Collection
-    // {
-    //     $proveedores = $this->proveedorRepository->obtenerPorIds($ids);
-    //     return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
-    // }
+    /**
+     * Eliminar un proveedor.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function eliminar(int $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            $query = Proveedor::query();
 
-    // /**
-    //  * Verificar si existe un proveedor.
-    //  *
-    //  * @param int $id
-    //  * @return bool
-    //  */
-    // public function existePorId(int $id): bool
-    // {
-    //     return $this->proveedorRepository->existePorId($id);
-    // }
+            $proveedor = $query->where('id', $id)
+                ->first();
 
-    // /**
-    //  * Contar proveedores.
-    //  *
-    //  * @param bool $soloActivos
-    //  * @return int
-    //  */
-    // public function contar(bool $soloActivos = false): int
-    // {
-    //     return $this->proveedorRepository->contarColeccion($soloActivos);
-    // }
+            if (!$proveedor) {
+                return false;
+            }
 
-    // /**
-    //  * Normalizar nombre (capitalizar cada palabra).
-    //  *
-    //  * @param string $nombre
-    //  * @return string
-    //  */
-    // private function normalizarNombre(string $nombre): string
-    // {
-    //     return mb_convert_case(trim($nombre), MB_CASE_TITLE, 'UTF-8');
-    // }
+            return $proveedor->delete();
+        });
+    }
 
-    // /**
-    //  * Normalizar teléfono (eliminar caracteres no numéricos excepto + y espacios).
-    //  *
-    //  * @param string $telefono
-    //  * @return string
-    //  */
-    // private function normalizarTelefono(string $telefono): string
-    // {
-    //     return trim($telefono);
-    // }
+    /**
+     * Buscar proveedores por término.
+     *
+     * @param string $termino
+     * @return Collection<int, ProveedorDTO>
+     */
+    public function buscar(string $termino): Collection
+    {
+        $terminoNormalizado = strtolower(trim($termino));
+
+        $query = Proveedor::query();
+
+        $proveedores = $query->where(function ($query) use ($terminoNormalizado) {
+            $query->whereRaw('LOWER(nombre) LIKE ?', ["%{$terminoNormalizado}%"])
+                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$terminoNormalizado}%"])
+                ->orWhere('telefono', 'LIKE', "%{$terminoNormalizado}%");
+        })
+            ->orderBy('nombre', 'asc')
+            ->get();
+
+        return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
+    }
+
+    /**
+     * Normalizar nombre (capitalizar cada palabra).
+     *
+     * @param string $nombre
+     * @return string
+     */
+    private function normalizarNombre(string $nombre): string
+    {
+        return mb_convert_case(trim($nombre), MB_CASE_TITLE, 'UTF-8');
+    }
+
+    /**
+     * Normalizar teléfono.
+     *
+     * @param string $telefono
+     * @return string
+     */
+    private function normalizarTelefono(string $telefono): string
+    {
+        return trim($telefono);
+    }
 }

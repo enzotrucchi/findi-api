@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\DTOs\Asociado\AsociadoDTO;
+use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
  */
 class AsociadoService
 {
+    use ObtenerOrganizacionSeleccionada;
+
     /**
      * Constructor.
      *
@@ -33,18 +36,7 @@ class AsociadoService
      */
     private function queryPorOrganizacionSeleccionada(): Builder
     {
-        /** @var \App\Models\Asociado|null $user */
-        $user = Auth::guard('sanctum')->user() ?? Auth::user();
-
-        if (! $user instanceof Asociado) {
-            abort(401, 'No autenticado.');
-        }
-
-        $orgId = $user->organizacion_seleccionada_id;
-
-        if (! $orgId) {
-            abort(403, 'No hay organización seleccionada.');
-        }
+        $orgId = $this->obtenerOrganizacionId();
 
         return Asociado::whereHas('organizaciones', function (Builder $q) use ($orgId) {
             $q->where('organizacion_id', $orgId)
@@ -58,18 +50,7 @@ class AsociadoService
      */
     private function queryPorOrganizacionSinFiltroActivo(): Builder
     {
-        /** @var \App\Models\Asociado|null $user */
-        $user = Auth::guard('sanctum')->user() ?? Auth::user();
-
-        if (! $user instanceof Asociado) {
-            abort(401, 'No autenticado.');
-        }
-
-        $orgId = $user->organizacion_seleccionada_id;
-
-        if (! $orgId) {
-            abort(403, 'No hay organización seleccionada.');
-        }
+        $orgId = $this->obtenerOrganizacionId();
 
         return Asociado::whereHas('organizaciones', function (Builder $q) use ($orgId) {
             $q->where('organizacion_id', $orgId);
@@ -95,8 +76,6 @@ class AsociadoService
         return $query
             ->orderBy('nombre', 'asc')
             ->paginate(perPage: $perPage, columns: ['*'], pageName: $pageName)
-            // Si más adelante querés usar DTOs:
-            // ->through(fn (Asociado $asociado) => AsociadoDTO::desdeModelo($asociado));
             ->through(fn($item) => ['asociado' => $item]);
     }
 
@@ -136,15 +115,7 @@ class AsociadoService
             throw new InvalidArgumentException('El email ya está registrado.');
         }
 
-        $user = Auth::user();
-        if (!$user instanceof Asociado) {
-            abort(401, 'No autenticado.');
-        }
-
-        $orgId = $user->organizacion_seleccionada_id;
-        if (!$orgId) {
-            abort(403, 'No hay organización seleccionada.');
-        }
+        $orgId = $this->obtenerOrganizacionId();
 
         return DB::transaction(function () use ($dto, $emailNormalizado, $orgId) {
             // Crear el asociado
@@ -216,7 +187,7 @@ class AsociadoService
             return null;
         }
 
-        $orgId = Auth::user()->organizacion_seleccionada_id;
+        $orgId = $this->obtenerOrganizacionId();
 
         $asociado->organizaciones()->updateExistingPivot($orgId, [
             'activo' => true,
@@ -236,7 +207,7 @@ class AsociadoService
             return null;
         }
 
-        $orgId = Auth::user()->organizacion_seleccionada_id;
+        $orgId = $this->obtenerOrganizacionId();
 
         $asociado->organizaciones()->updateExistingPivot($orgId, [
             'activo' => null,

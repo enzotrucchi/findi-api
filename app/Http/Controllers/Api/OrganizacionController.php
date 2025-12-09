@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\DTOs\Organizacion\ActualizarOrganizacionDTO;
-use App\DTOs\Organizacion\CrearOrganizacionDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Services\OrganizacionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
+use App\DTOs\Organizacion\OrganizacionDTO;
 
 class OrganizacionController extends Controller
 {
@@ -46,7 +45,7 @@ class OrganizacionController extends Controller
     public function crear(Request $request): JsonResponse
     {
         try {
-            $dto = CrearOrganizacionDTO::desdeArray($request->all());
+            $dto = OrganizacionDTO::desdeArray($request->all());
             $organizacion = $this->organizacionService->crear($dto);
 
             return ApiResponse::creado($organizacion->aArray(), 'Organización creada exitosamente');
@@ -60,7 +59,7 @@ class OrganizacionController extends Controller
     public function actualizar(Request $request, int $id): JsonResponse
     {
         try {
-            $dto = ActualizarOrganizacionDTO::desdeArray($request->all());
+            $dto = OrganizacionDTO::desdeArray($request->all());
             $organizacion = $this->organizacionService->actualizar($id, $dto);
 
             if (!$organizacion) {

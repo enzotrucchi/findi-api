@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\DTOs\Movimiento\MovimientoDTO;
 use App\DTOs\Movimiento\FiltroMovimientoDTO;
+use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use App\Models\Movimiento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,8 @@ use InvalidArgumentException;
  */
 class MovimientoService
 {
+    use ObtenerOrganizacionSeleccionada;
+
     public function __construct() {}
 
     /**
@@ -27,7 +30,9 @@ class MovimientoService
      */
     public function obtenerColeccion(FiltroMovimientoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
     {
-        return Movimiento::query()
+        $query = Movimiento::query();
+
+        return $query
             ->orderBy('fecha', 'desc')
             ->orderBy('hora', 'desc')
             ->paginate(perPage: 15, columns: ['*'], pageName: 'pagina');
@@ -40,8 +45,10 @@ class MovimientoService
      */
     public function obtenerBalance(): array
     {
-        $ingresos = Movimiento::where('tipo', 'ingreso')->sum('monto');
-        $egresos = Movimiento::where('tipo', 'egreso')->sum('monto');
+        $query = Movimiento::query();
+
+        $ingresos = (clone $query)->where('tipo', 'ingreso')->sum('monto');
+        $egresos = (clone $query)->where('tipo', 'egreso')->sum('monto');
 
         return [
             'ingresos' => $ingresos,
@@ -59,17 +66,7 @@ class MovimientoService
      */
     public function crear(MovimientoDTO $dto): Movimiento
     {
-        $user = Auth::user();
-
-        if (!$user) {
-            abort(401, 'No autenticado.');
-        }
-
-        $orgId = $user->organizacion_seleccionada_id;
-
-        if (!$orgId) {
-            abort(403, 'No hay organización seleccionada.');
-        }
+        $orgId = $this->obtenerOrganizacionId();
 
         return Movimiento::create([
             'fecha' => $dto->fecha,
@@ -97,7 +94,9 @@ class MovimientoService
      */
     public function actualizar(int $id, MovimientoDTO $dto): ?Movimiento
     {
-        $movimiento = Movimiento::find($id);
+        $query = Movimiento::query();
+
+        $movimiento = $query->find($id);
 
         if (!$movimiento) {
             return null;
@@ -128,7 +127,9 @@ class MovimientoService
      */
     public function eliminar(int $id): bool
     {
-        $movimiento = Movimiento::find($id);
+        $query = Movimiento::query();
+
+        $movimiento = $query->find($id);
 
         if (!$movimiento) {
             return false;

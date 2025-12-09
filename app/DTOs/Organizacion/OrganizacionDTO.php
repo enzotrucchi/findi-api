@@ -2,63 +2,48 @@
 
 namespace App\DTOs\Organizacion;
 
-use App\Models\Organizacion;
-
 /**
  * DTO para Organizacion
  * 
- * Objeto de transferencia de datos inmutable para representar
- * una organización en las respuestas de la API.
+ * Encapsula los datos necesarios para crear/actualizar una organización.
  */
 class OrganizacionDTO
 {
-    /**
-     * Constructor privado para forzar el uso de métodos factory.
-     */
-    private function __construct(
-        public readonly int $id,
+    public function __construct(
         public readonly string $nombre,
-        public readonly string $fechaAlta,
-        public readonly bool $esPrueba,
-        public readonly ?string $fechaFinPrueba,
-        public readonly string $fechaCreacion,
-        public readonly string $fechaActualizacion,
+        public readonly ?string $fechaAlta = null,
+        public readonly ?bool $esPrueba = null,
+        public readonly ?string $fechaFinPrueba = null,
     ) {}
 
     /**
-     * Crear DTO desde un modelo Eloquent.
+     * Crear DTO desde un array de datos.
      *
-     * @param Organizacion $organizacion
+     * @param array<string, mixed> $datos
      * @return self
      */
-    public static function desdeModelo(Organizacion $organizacion): self
+    public static function desdeArray(array $datos): self
     {
         return new self(
-            id: $organizacion->id,
-            nombre: $organizacion->nombre,
-            fechaAlta: $organizacion->fecha_alta,
-            esPrueba: $organizacion->es_prueba,
-            fechaFinPrueba: $organizacion->fecha_fin_prueba,
-            fechaCreacion: $organizacion->created_at->toIso8601String(),
-            fechaActualizacion: $organizacion->updated_at->toIso8601String(),
+            nombre: $datos['nombre'],
+            fechaAlta: $datos['fecha_alta'] ?? null,
+            esPrueba: isset($datos['es_prueba']) ? (bool) $datos['es_prueba'] : null,
+            fechaFinPrueba: $datos['fecha_fin_prueba'] ?? null,
         );
     }
 
     /**
-     * Convertir DTO a array.
+     * Convertir DTO a array para almacenamiento.
      *
      * @return array<string, mixed>
      */
     public function aArray(): array
     {
         return [
-            'id' => $this->id,
             'nombre' => $this->nombre,
-            'fechaAlta' => $this->fechaAlta,
-            'esPrueba' => $this->esPrueba,
-            'fechaFinPrueba' => $this->fechaFinPrueba,
-            'fechaCreacion' => $this->fechaCreacion,
-            'fechaActualizacion' => $this->fechaActualizacion,
+            'fecha_alta' => $this->fechaAlta,
+            'es_prueba' => $this->esPrueba,
+            'fecha_fin_prueba' => $this->fechaFinPrueba,
         ];
     }
 }

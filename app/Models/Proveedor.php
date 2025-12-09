@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\TieneOrganizacionSeleccionadaScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 class Proveedor extends Model
 {
     use HasFactory;
+    use TieneOrganizacionSeleccionadaScope;
+
 
     /**
      * Nombre de la tabla asociada al modelo.
@@ -29,6 +32,7 @@ class Proveedor extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'organizacion_id',
         'nombre',
         'email',
         'telefono',
@@ -45,4 +49,17 @@ class Proveedor extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Relación con Organizacion.
+     */
+    public function organizacion()
+    {
+        return $this->belongsTo(Organizacion::class);
+    }
+
+    public function movimientos()
+    {
+        return $this->hasMany(Movimiento::class, 'proveedor_id');
+    }
 }

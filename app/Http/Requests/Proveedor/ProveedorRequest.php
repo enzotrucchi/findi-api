@@ -32,13 +32,10 @@ class ProveedorRequest extends FormRequest
      */
     public function rules(): array
     {
-        $esCreacion = $this->isMethod('POST');
-        $requerido = $esCreacion ? 'required' : 'sometimes';
-
         return [
-            'nombre' => [$requerido, 'string', 'max:255', 'min:2'],
-            'email' => [$requerido, 'email', 'max:255'],
-            'telefono' => [$requerido, 'string', 'max:50'],
+            'nombre' => ['required', 'string', 'max:255', 'min:2'],
+            'email' => ['required', 'email', 'max:255'],
+            'telefono' => ['required', 'string', 'max:50'],
             'activo' => ['sometimes', 'boolean'],
         ];
     }
@@ -55,48 +52,16 @@ class ProveedorRequest extends FormRequest
             'nombre.string' => 'El nombre debe ser un texto.',
             'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
             'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
-            
+
             'email.required' => 'El email es obligatorio.',
             'email.email' => 'El email debe ser una dirección válida.',
             'email.max' => 'El email no puede tener más de 255 caracteres.',
-            
+
             'telefono.required' => 'El teléfono es obligatorio.',
             'telefono.string' => 'El teléfono debe ser un texto.',
             'telefono.max' => 'El teléfono no puede tener más de 50 caracteres.',
-            
+
             'activo.boolean' => 'El campo activo debe ser verdadero o falso.',
         ];
-    }
-
-    /**
-     * Personalizar nombres de atributos para mensajes.
-     *
-     * @return array<string, string>
-     */
-    public function attributes(): array
-    {
-        return [
-            'nombre' => 'nombre',
-            'email' => 'email',
-            'telefono' => 'teléfono',
-            'activo' => 'activo',
-        ];
-    }
-
-    /**
-     * Manejar fallos de validación.
-     *
-     * @param Validator $validator
-     * @throws HttpResponseException
-     */
-    protected function failedValidation(Validator $validator): void
-    {
-        throw new HttpResponseException(
-            response()->json([
-                'exito' => false,
-                'mensaje' => 'Errores de validación.',
-                'errores' => $validator->errors(),
-            ], 422)
-        );
     }
 }

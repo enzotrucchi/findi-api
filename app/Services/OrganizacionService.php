@@ -2,12 +2,9 @@
 
 namespace App\Services;
 
-use App\DTOs\Organizacion\ActualizarOrganizacionDTO;
-use App\DTOs\Organizacion\CrearOrganizacionDTO;
 use App\DTOs\Organizacion\OrganizacionDTO;
-use App\Repositories\Contracts\OrganizacionRepositoryInterface;
+use App\Models\Organizacion;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -17,199 +14,184 @@ use InvalidArgumentException;
  */
 class OrganizacionService
 {
+    public function __construct() {}
+
     /**
-     * Constructor.
+     * Obtener todas las organizaciones.
      *
+     * @param bool $soloPrueba
+     * @param bool $soloProduccion
+     * @return Collection
      */
-    // public function __construct() {}
+    public function obtenerColeccion(bool $soloPrueba = false, bool $soloProduccion = false): Collection
+    {
+        $query = Organizacion::query();
 
-    // /**
-    //  * Obtener todas las organizaciones.
-    //  *
-    //  * @param bool $soloPrueba
-    //  * @param bool $soloProduccion
-    //  * @return Collection<int, OrganizacionDTO>
-    //  */
-    // public function obtenerColeccion(bool $soloPrueba = false, bool $soloProduccion = false): Collection
-    // {
-    //     if ($soloPrueba) {
-    //         $organizaciones = $this->organizacionRepository->obtenerPrueba();
-    //     } elseif ($soloProduccion) {
-    //         $organizaciones = $this->organizacionRepository->obtenerProduccion();
-    //     } else {
-    //         $organizaciones = $this->organizacionRepository->obtenerColeccion();
-    //     }
+        if ($soloPrueba) {
+            $query->where('es_prueba', true);
+        } elseif ($soloProduccion) {
+            $query->where('es_prueba', false);
+        }
 
-    //     return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
-    // }
+        return $query->orderBy('nombre', 'asc')->get();
+    }
 
-    // /**
-    //  * Obtener una organización por ID.
-    //  *
-    //  * @param int $id
-    //  * @return OrganizacionDTO|null
-    //  */
-    // public function obtenerPorId(int $id): ?OrganizacionDTO
-    // {
-    //     $organizacion = $this->organizacionRepository->obtenerPorId($id);
+    /**
+     * Obtener una organización por ID.
+     *
+     * @param int $id
+     * @return Organizacion|null
+     */
+    public function obtenerPorId(int $id): ?Organizacion
+    {
+        return Organizacion::find($id);
+    }
 
-    //     if (!$organizacion) {
-    //         return null;
-    //     }
+    /**
+     * Crear una nueva organización.
+     *
+     * @param OrganizacionDTO $dto
+     * @return Organizacion
+     * @throws InvalidArgumentException
+     */
+    public function crear(OrganizacionDTO $dto): Organizacion
+    {
+        // Validar que el nombre no exista
+        if ($this->existeNombre($dto->nombre)) {
+            throw new InvalidArgumentException('El nombre de organización ya está registrado.');
+        }
 
-    //     return OrganizacionDTO::desdeModelo($organizacion);
-    // }
+        // Validar fecha de fin de prueba
+        if ($dto->esPrueba && $dto->fechaFinPrueba === null) {
+            throw new InvalidArgumentException('Las organizaciones de prueba deben tener una fecha de fin de prueba.');
+        }
 
-    // /**
-    //  * Crear una nueva organización.
-    //  *
-    //  * @param CrearOrganizacionDTO $dto
-    //  * @return OrganizacionDTO
-    //  * @throws InvalidArgumentException
-    //  */
-    // public function crear(CrearOrganizacionDTO $dto): OrganizacionDTO
-    // {
-    //     // Validar que el nombre no exista
-    //     if ($this->organizacionRepository->existeNombre($dto->nombre)) {
-    //         throw new InvalidArgumentException('El nombre de organización ya está registrado.');
-    //     }
+        return Organizacion::create([
+            'nombre' => $this->normalizarNombre($dto->nombre),
+            'fecha_alta' => $dto->fechaAlta ?? now()->format('Y-m-d'),
+            'es_prueba' => $dto->esPrueba ?? false,
+            'fecha_fin_prueba' => $dto->fechaFinPrueba,
+        ]);
+    }
 
-    //     // Validar fecha de fin de prueba
-    //     if ($dto->esPrueba && $dto->fechaFinPrueba === null) {
-    //         throw new InvalidArgumentException('Las organizaciones de prueba deben tener una fecha de fin de prueba.');
-    //     }
+    /**
+     * Actualizar una organización existente.
+     *
+     * @param int $id
+     * @param OrganizacionDTO $dto
+     * @return Organizacion|null
+     * @throws InvalidArgumentException
+     */
+    public function actualizar(int $id, OrganizacionDTO $dto): ?Organizacion
+    {
+        $organizacion = Organizacion::find($id);
 
-    //     // Normalizar datos
-    //     $datosNormalizados = [
-    //         'nombre' => trim($dto->nombre),
-    //         'fecha_alta' => $dto->fechaAlta,
-    //         'es_prueba' => $dto->esPrueba,
-    //         'fecha_fin_prueba' => $dto->fechaFinPrueba,
-    //     ];
+        if (!$organizacion) {
+            return null;
+        }
 
-    //     $organizacion = DB::transaction(function () use ($datosNormalizados) {
-    //         return $this->organizacionRepository->crear($datosNormalizados);
-    //     });
+        // Validar nombre si cambió
+        $nombreNormalizado = $this->normalizarNombre($dto->nombre);
+        if ($nombreNormalizado !== $organizacion->nombre && $this->existeNombre($nombreNormalizado, $id)) {
+            throw new InvalidArgumentException('El nombre de organización ya está registrado.');
+        }
 
-    //     return OrganizacionDTO::desdeModelo($organizacion);
-    // }
+        $organizacion->update([
+            'nombre' => $nombreNormalizado,
+            'fecha_alta' => $dto->fechaAlta ?? $organizacion->fecha_alta,
+            'es_prueba' => $dto->esPrueba ?? $organizacion->es_prueba,
+            'fecha_fin_prueba' => $dto->fechaFinPrueba ?? $organizacion->fecha_fin_prueba,
+        ]);
 
-    // /**
-    //  * Actualizar una organización existente.
-    //  *
-    //  * @param int $id
-    //  * @param ActualizarOrganizacionDTO $dto
-    //  * @return OrganizacionDTO|null
-    //  * @throws InvalidArgumentException
-    //  */
-    // public function actualizar(int $id, ActualizarOrganizacionDTO $dto): ?OrganizacionDTO
-    // {
-    //     $organizacion = $this->organizacionRepository->obtenerPorId($id);
+        return $organizacion->fresh();
+    }
 
-    //     if (!$organizacion) {
-    //         return null;
-    //     }
+    /**
+     * Eliminar una organización.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function eliminar(int $id): bool
+    {
+        $organizacion = Organizacion::find($id);
 
-    //     // Validar nombre si se está actualizando
-    //     if ($dto->nombre !== null && $this->organizacionRepository->existeNombre($dto->nombre, $id)) {
-    //         throw new InvalidArgumentException('El nombre de organización ya está registrado.');
-    //     }
+        if (!$organizacion) {
+            return false;
+        }
 
-    //     // Normalizar datos
-    //     $datosNormalizados = [];
+        return $organizacion->delete();
+    }
 
-    //     if ($dto->nombre !== null) {
-    //         $datosNormalizados['nombre'] = trim($dto->nombre);
-    //     }
+    /**
+     * Buscar organizaciones por término.
+     *
+     * @param string $termino
+     * @return Collection
+     */
+    public function buscar(string $termino): Collection
+    {
+        return Organizacion::where('nombre', 'like', '%' . $termino . '%')
+            ->orderBy('nombre', 'asc')
+            ->get();
+    }
 
-    //     if ($dto->fechaAlta !== null) {
-    //         $datosNormalizados['fecha_alta'] = $dto->fechaAlta;
-    //     }
+    /**
+     * Obtener organizaciones por múltiples IDs.
+     *
+     * @param array<int> $ids
+     * @return Collection
+     */
+    public function obtenerPorIds(array $ids): Collection
+    {
+        return Organizacion::whereIn('id', $ids)->get();
+    }
 
-    //     if ($dto->esPrueba !== null) {
-    //         $datosNormalizados['es_prueba'] = $dto->esPrueba;
-    //     }
+    /**
+     * Verificar si existe una organización.
+     *
+     * @param int $id
+     * @return bool
+     */
+    public function existePorId(int $id): bool
+    {
+        return Organizacion::where('id', $id)->exists();
+    }
 
-    //     if ($dto->fechaFinPrueba !== null) {
-    //         $datosNormalizados['fecha_fin_prueba'] = $dto->fechaFinPrueba;
-    //     }
+    /**
+     * Contar organizaciones.
+     *
+     * @return int
+     */
+    public function contar(): int
+    {
+        return Organizacion::count();
+    }
 
-    //     DB::transaction(function () use ($id, $datosNormalizados) {
-    //         $this->organizacionRepository->actualizar($id, $datosNormalizados);
-    //     });
+    /**
+     * Verificar si existe un nombre de organización.
+     *
+     * @param string $nombre
+     * @param int|null $excluirId
+     * @return bool
+     */
+    public function existeNombre(string $nombre, ?int $excluirId = null): bool
+    {
+        $query = Organizacion::where('nombre', $this->normalizarNombre($nombre));
+        if ($excluirId !== null) {
+            $query->where('id', '!=', $excluirId);
+        }
+        return $query->exists();
+    }
 
-    //     // Refrescar el modelo
-    //     $organizacionActualizada = $this->organizacionRepository->obtenerPorId($id);
-
-    //     return OrganizacionDTO::desdeModelo($organizacionActualizada);
-    // }
-
-    // /**
-    //  * Eliminar una organización.
-    //  *
-    //  * @param int $id
-    //  * @return bool
-    //  */
-    // public function eliminar(int $id): bool
-    // {
-    //     return DB::transaction(function () use ($id) {
-    //         return $this->organizacionRepository->eliminar($id);
-    //     });
-    // }
-
-    // /**
-    //  * Buscar organizaciones por término.
-    //  *
-    //  * @param string $termino
-    //  * @return Collection<int, OrganizacionDTO>
-    //  */
-    // public function buscar(string $termino): Collection
-    // {
-    //     $organizaciones = $this->organizacionRepository->buscar($termino);
-    //     return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
-    // }
-
-    // /**
-    //  * Obtener organizaciones por múltiples IDs.
-    //  *
-    //  * @param array<int> $ids
-    //  * @return Collection<int, OrganizacionDTO>
-    //  */
-    // public function obtenerPorIds(array $ids): Collection
-    // {
-    //     $organizaciones = $this->organizacionRepository->obtenerPorIds($ids);
-    //     return $organizaciones->map(fn($organizacion) => OrganizacionDTO::desdeModelo($organizacion));
-    // }
-
-    // /**
-    //  * Verificar si existe una organización.
-    //  *
-    //  * @param int $id
-    //  * @return bool
-    //  */
-    // public function existePorId(int $id): bool
-    // {
-    //     return $this->organizacionRepository->existePorId($id);
-    // }
-
-    // /**
-    //  * Contar organizaciones.
-    //  *
-    //  * @return int
-    //  */
-    // public function contar(): int
-    // {
-    //     return $this->organizacionRepository->contarColeccion();
-    // }
-
-    // /**
-    //  * Normalizar nombre (capitalizar cada palabra).
-    //  *
-    //  * @param string $nombre
-    //  * @return string
-    //  */
-    // private function normalizarNombre(string $nombre): string
-    // {
-    //     return ucwords(strtolower(trim($nombre)));
-    // }
+    /**
+     * Normalizar nombre (capitalizar cada palabra).
+     *
+     * @param string $nombre
+     * @return string
+     */
+    private function normalizarNombre(string $nombre): string
+    {
+        return ucwords(strtolower(trim($nombre)));
+    }
 }
