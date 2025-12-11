@@ -94,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('asociados/estadisticas', [AsociadoController::class, 'obtenerEstadisticas']);
     Route::get('asociados', [AsociadoController::class, 'obtenerColeccion']);
     Route::post('asociados', [AsociadoController::class, 'crear']);
+    Route::get('asociados/{id}/movimientos', [AsociadoController::class, 'obtenerMovimientos']);
     Route::put('asociados/{id}', [AsociadoController::class, 'actualizar']);
     Route::patch('asociados/{id}/activar', [AsociadoController::class, 'activar']);
     Route::patch('asociados/{id}/desactivar', [AsociadoController::class, 'desactivar']);

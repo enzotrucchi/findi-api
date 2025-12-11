@@ -22,6 +22,10 @@ class MovimientoController extends Controller
     {
         try {
             $filtroDTO = new FiltroMovimientoDTO();
+            $filtroDTO->setPagina(request()->query('pagina', 1));
+            $filtroDTO->setFechaDesde(request()->query('fecha_desde'));
+            $filtroDTO->setFechaHasta(request()->query('fecha_hasta'));
+
             $movimientos = $this->movimientoService->obtenerColeccion($filtroDTO);
 
             return ApiResponse::exito($movimientos, 'Movimientos obtenidos exitosamente');

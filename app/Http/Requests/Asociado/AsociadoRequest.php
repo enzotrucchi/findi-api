@@ -37,7 +37,7 @@ class AsociadoRequest extends FormRequest
 
         return [
             'nombre' => [$requerido, 'string', 'max:255', 'min:2'],
-            'email' => [$requerido, 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:100'],
             'domicilio' => ['nullable', 'string', 'max:500'],
         ];
@@ -56,7 +56,6 @@ class AsociadoRequest extends FormRequest
             'nombre.max' => 'El nombre no puede tener más de 255 caracteres.',
             'nombre.min' => 'El nombre debe tener al menos 2 caracteres.',
 
-            'email.required' => 'El email es obligatorio.',
             'email.email' => 'El email debe ser una dirección válida.',
             'email.max' => 'El email no puede tener más de 255 caracteres.',
 

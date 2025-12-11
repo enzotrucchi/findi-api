@@ -32,10 +32,20 @@ class MovimientoService
     {
         $query = Movimiento::query();
 
+        $query->with(['asociado', 'modoPago']);
+
+        if ($filtroDTO->getFechaDesde()) {
+            $query->where('fecha', '>=', $filtroDTO->getFechaDesde());
+        }
+
+        if ($filtroDTO->getFechaHasta()) {
+            $query->where('fecha', '<=', $filtroDTO->getFechaHasta());
+        }
+
         return $query
             ->orderBy('fecha', 'desc')
             ->orderBy('hora', 'desc')
-            ->paginate(perPage: 15, columns: ['*'], pageName: 'pagina');
+            ->paginate(perPage: 10, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
     }
 
     /**

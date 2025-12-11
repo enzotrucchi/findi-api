@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\DTOs\Asociado\AsociadoDTO;
+use App\Mail\BienvenidaAsociado;
 use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 use App\DTOs\Asociado\FiltroAsociadoDTO;
 use App\Models\Asociado;
@@ -68,15 +70,13 @@ class AsociadoService
      */
     public function obtenerColeccion(FiltroAsociadoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = $this->queryPorOrganizacionSeleccionada();
+        $query = Asociado::query();
 
         $perPage  = 10;
-        $pageName = 'pagina';
 
         return $query
             ->orderBy('nombre', 'asc')
-            ->paginate(perPage: $perPage, columns: ['*'], pageName: $pageName)
-            ->through(fn($item) => ['asociado' => $item]);
+            ->paginate(perPage: $perPage, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
     }
 
     /**
@@ -101,6 +101,26 @@ class AsociadoService
     }
 
     /**
+     * Obtener movimientos de un asociado por su ID.
+     *
+     * @param int $id
+     * @return Collection<int, mixed>|null
+     */
+    public function obtenerMovimientos(int $id): ?Collection
+    {
+        // Verificar que el asociado pertenezca a la organización seleccionada
+        $asociado = $this->queryPorOrganizacionSeleccionada()
+            ->where('asociados.id', $id)
+            ->first();
+
+        if (!$asociado) {
+            return null;
+        }
+
+        return $asociado->movimientos()->get();
+    }
+
+    /**
      * Crear un nuevo asociado.
      *
      * @param AsociadoDTO $dto
@@ -111,9 +131,9 @@ class AsociadoService
     {
         $emailNormalizado = $this->normalizarEmail($dto->email);
 
-        if ($this->existeEmail($emailNormalizado)) {
-            throw new InvalidArgumentException('El email ya está registrado.');
-        }
+        // if ($this->existeEmail($emailNormalizado)) {
+        //     throw new InvalidArgumentException('El email ya está registrado.');
+        // }
 
         $orgId = $this->obtenerOrganizacionId();
 
@@ -132,6 +152,15 @@ class AsociadoService
                 'es_admin' => null,
                 'fecha_alta' => now(),
             ]);
+
+            $organizacionNombre = $asociado->organizaciones()->where('organizacion_id', $orgId)->first()->nombre;
+
+            if (!$emailNormalizado) {
+                return $asociado;
+            }
+
+            // Enviar email de bienvenida
+            Mail::to($asociado->email)->send(new BienvenidaAsociado($asociado, $organizacionNombre));
 
             return $asociado;
         });

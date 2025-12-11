@@ -28,12 +28,8 @@ class AsociadoController extends Controller
     public function obtenerColeccion(FiltroAsociadoDTO $filtroDTO): JsonResponse
     {
         try {
-            // Por ahora el DTO está vacío, pero acá podrías mapear query params:
-            // $filtroDTO = new FiltroAsociadoDTO(
-            //     soloActivos: (bool) $request->query('solo_activos', false),
-            //     soloAdmins: (bool) $request->query('solo_admins', false),
-            // );
             $filtroDTO = new FiltroAsociadoDTO();
+            $filtroDTO->setPagina(request()->input('pagina', 1));
 
             $asociados = $this->asociadoService->obtenerColeccion($filtroDTO);
 
@@ -50,6 +46,21 @@ class AsociadoController extends Controller
             return ApiResponse::exito($estadisticas, 'Estadísticas de asociados obtenidas');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener estadísticas: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function obtenerMovimientos(int $id): JsonResponse
+    {
+        try {
+            $movimientos = $this->asociadoService->obtenerMovimientos($id);
+
+            if ($movimientos === null) {
+                return ApiResponse::noEncontrado('Asociado no encontrado');
+            }
+
+            return ApiResponse::exito($movimientos, 'Movimientos del asociado obtenidos exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener movimientos: ' . $e->getMessage(), 500);
         }
     }
 
