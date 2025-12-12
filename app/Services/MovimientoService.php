@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\DTOs\Movimiento\MovimientoDTO;
 use App\DTOs\Movimiento\FiltroMovimientoDTO;
+use App\Mail\ComprobanteMovimiento;
 use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use App\Models\Movimiento;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use InvalidArgumentException;
 
 /**
@@ -78,7 +81,7 @@ class MovimientoService
     {
         $orgId = $this->obtenerOrganizacionId();
 
-        return Movimiento::create([
+        $movimiento = Movimiento::create([
             'fecha' => $dto->fecha,
             'hora' => $dto->hora ?? now()->format('H:i:s'),
             'detalle' => $dto->detalle ? trim($dto->detalle) : null,
@@ -92,6 +95,25 @@ class MovimientoService
             'modo_pago_id' => $dto->modoPagoId,
             'organizacion_id' => $orgId,
         ]);
+
+        $movimiento->fresh();
+
+        $movimiento->load(['asociado', 'modoPago', 'proyecto', 'proveedor', 'organizacion']);
+
+        // Enviar correo con comprobante si el asociado tiene email
+        if ($movimiento->asociado && $movimiento->asociado->email) {
+            try {
+                $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+                Mail::to($movimiento->asociado->email)->send(
+                    new ComprobanteMovimiento($movimiento, $organizacionNombre)
+                );
+            } catch (\Exception $e) {
+                // Log del error pero no falla la creación del movimiento
+                Log::error('Error al enviar email de comprobante: ' . $e->getMessage());
+            }
+        }
+
+        return $movimiento;
     }
 
     /**
@@ -126,7 +148,13 @@ class MovimientoService
             'modo_pago_id' => $dto->modoPagoId,
         ]);
 
-        return $movimiento->fresh();
+
+
+        $movimiento->fresh();
+
+        $movimiento->load(['asociado', 'modoPago']);
+
+        return $movimiento;
     }
 
     /**
