@@ -18,7 +18,8 @@ return [
     'allowed_methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 
     // Permitir todas las orígenes por ahora (cambiar en producción)
-    'allowed_origins' => ['*'],
+    // 'allowed_origins' => ['*'],
+    'allowed_origins' => array_filter([env('FRONTEND_URL')]),
 
     'allowed_origins_patterns' => [],
 
