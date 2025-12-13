@@ -70,7 +70,7 @@ class AsociadoService
      */
     public function obtenerColeccion(FiltroAsociadoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $query = Asociado::query();
+        $query = $this->queryPorOrganizacionSeleccionada();
 
         $perPage  = 10;
 

@@ -27,6 +27,7 @@ class BienvenidaAsociado extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            to: $this->asociado->email,
             subject: 'Bienvenido a Findi',
         );
     }

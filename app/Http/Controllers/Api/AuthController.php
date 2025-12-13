@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\DTOs\Organizacion\OrganizacionDTO;
 use App\DTOs\Asociado\AsociadoDTO;
 use App\Http\Controllers\Controller;
+use App\Mail\BienvenidaAsociado;
 use App\Models\Asociado;
 use App\Models\Organizacion;
 use App\Services\AsociadoService;
@@ -13,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 
@@ -243,26 +245,6 @@ class AuthController extends Controller
                     'asociado'     => $asociadoModel,
                 ];
             });
-
-            // Crear token para loguear al usuario inmediatamente después del signup
-            $token = $resultado['asociado']->createToken('findi-pwa')->plainTextToken;
-
-            return response()->json([
-                'message' => 'Cuenta creada exitosamente',
-                'data'    => [
-                    'organizacion' => [
-                        'id'     => $resultado['organizacion']->id,
-                        'nombre' => $resultado['organizacion']->nombre,
-                    ],
-                    'asociado'     => [
-                        'id'     => $resultado['asociado']->id,
-                        'nombre' => $resultado['asociado']->nombre,
-                        'email'  => $resultado['asociado']->email,
-                    ],
-                    'token'                        => $token,
-                    'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
-                ],
-            ], 201);
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'message' => 'Error en la validación',
@@ -277,6 +259,39 @@ class AuthController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+
+        // Crear token para loguear al usuario inmediatamente después del signup
+        $token = $resultado['asociado']->createToken('findi-pwa')->plainTextToken;
+
+        // Enviar email de bienvenida (fuera del try-catch de BD)
+        try {
+            Mail::send(new BienvenidaAsociado(
+                $resultado['asociado'],
+                $resultado['organizacion']->nombre
+            ));
+        } catch (\Exception $e) {
+            Log::warning('Error al enviar email de bienvenida: ' . $e->getMessage(), [
+                'asociado_id' => $resultado['asociado']->id,
+            ]);
+            // No hacemos que falle la respuesta si el email falla
+        }
+
+        return response()->json([
+            'message' => 'Cuenta creada exitosamente',
+            'data'    => [
+                'organizacion' => [
+                    'id'     => $resultado['organizacion']->id,
+                    'nombre' => $resultado['organizacion']->nombre,
+                ],
+                'asociado'     => [
+                    'id'     => $resultado['asociado']->id,
+                    'nombre' => $resultado['asociado']->nombre,
+                    'email'  => $resultado['asociado']->email,
+                ],
+                'token'                        => $token,
+                'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
+            ],
+        ], 201);
     }
 
     /**
