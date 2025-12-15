@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'api/auth/*',  // Endpoints de autenticación no necesitan CSRF (usan Google token)
+        // Las rutas API usan Sanctum stateful (cookies + CSRF)
+        // No excluir nada aquí para mantener protección CSRF
     ];
 }

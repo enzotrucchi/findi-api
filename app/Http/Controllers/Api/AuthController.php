@@ -67,7 +67,6 @@ class AuthController extends Controller
         if (! $asociado) {
             // Usuario nuevo: no hay asociado todavía → flujo de signup
             return response()->json([
-                'token'                        => null,
                 'usuario'                      => [
                     'id'    => null,
                     'name'  => $nombreGoogle,
@@ -123,8 +122,8 @@ class AuthController extends Controller
             }
         }
 
-        // 8) Crear token de acceso (Sanctum)
-        $token = $asociado->createToken('findi-pwa')->plainTextToken;
+        // 8) Autenticar usuario con sesión (Sanctum stateful)
+        auth()->login($asociado);
 
         // 9) Mapear organizaciones activas para el front
         $organizationsPayload = $organizacionesActivas->map(function ($org) {
@@ -140,7 +139,7 @@ class AuthController extends Controller
         })->values()->all();
 
         return response()->json([
-            'token'                        => $token,
+            // No enviamos token, usamos cookies de sesión
             'usuario'                      => [
                 'id'     => $asociado->id,
                 'nombre' => $asociado->nombre,
@@ -260,8 +259,8 @@ class AuthController extends Controller
             ], 500);
         }
 
-        // Crear token para loguear al usuario inmediatamente después del signup
-        $token = $resultado['asociado']->createToken('findi-pwa')->plainTextToken;
+        // Autenticar usuario con sesión (Sanctum stateful)
+        auth()->login($resultado['asociado']);
 
         // Enviar email de bienvenida (fuera del try-catch de BD)
         try {
@@ -290,7 +289,6 @@ class AuthController extends Controller
                     'nombre' => $resultado['asociado']->nombre,
                     'email'  => $resultado['asociado']->email,
                 ],
-                'token'                        => $token,
                 'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
             ],
         ], 201);
