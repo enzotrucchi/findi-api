@@ -9,10 +9,17 @@ use Illuminate\Support\Facades\Route;
 |
 | Here is where you can register web routes for your application. These
 | routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| be assigned the "web" middleware group. Make something great!
 |
 */
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Ruta CSRF explícita para SPA (Angular/frontend separado)
+// Esta ruta necesita estar en 'web' group para acceso a sesión,
+// pero excluida del middleware CSRF verification
+Route::get('/sanctum/csrf-cookie', function () {
+    return response()->noContent();
+})->middleware('web');

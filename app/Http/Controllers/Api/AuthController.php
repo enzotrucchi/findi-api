@@ -282,6 +282,8 @@ class AuthController extends Controller
                 'organizacion' => [
                     'id'     => $resultado['organizacion']->id,
                     'nombre' => $resultado['organizacion']->nombre,
+                    'es_prueba' => (bool) $resultado['organizacion']->es_prueba,
+                    'fecha_fin_prueba' => $resultado['organizacion']->fecha_fin_prueba,
                 ],
                 'asociado'     => [
                     'id'     => $resultado['asociado']->id,

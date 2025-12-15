@@ -117,7 +117,7 @@ class AsociadoService
             return null;
         }
 
-        return $asociado->movimientos()->get();
+        return $asociado->movimientos()->with('modoPago')->orderBy('fecha', 'desc')->get();
     }
 
     /**
