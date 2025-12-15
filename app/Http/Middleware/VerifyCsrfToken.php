@@ -12,6 +12,6 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'api/auth/*',  // Endpoints de autenticación no necesitan CSRF (usan Google token)
+        'api/*',  // TODO: Re-habilitar CSRF cuando se solucione configuración de cookies cross-domain
     ];
 }
