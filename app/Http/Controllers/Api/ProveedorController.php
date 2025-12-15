@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\Proveedor\FiltroProveedorDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Proveedor\ProveedorRequest;
 use App\Http\Responses\ApiResponse;
@@ -38,8 +39,10 @@ class ProveedorController extends Controller
     public function obtenerColeccion(Request $request): JsonResponse
     {
         try {
+            $filtroDTO = new FiltroProveedorDTO();
+            $filtroDTO->setPagina(request()->input('pagina', 1));
 
-            $proveedores = $this->proveedorService->obtenerColeccion();
+            $proveedores = $this->proveedorService->obtenerColeccion($filtroDTO);
 
             return ApiResponse::exito(
                 $proveedores,
@@ -50,6 +53,21 @@ class ProveedorController extends Controller
                 'Error al obtener proveedores: ' . $e->getMessage(),
                 500
             );
+        }
+    }
+
+    public function obtenerMovimientos(int $id): JsonResponse
+    {
+        try {
+            $movimientos = $this->proveedorService->obtenerMovimientos($id);
+
+            if ($movimientos === null) {
+                return ApiResponse::noEncontrado('Proveedor no encontrado');
+            }
+
+            return ApiResponse::exito($movimientos, 'Movimientos del proveedor obtenidos exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener movimientos: ' . $e->getMessage(), 500);
         }
     }
 
@@ -92,6 +110,9 @@ class ProveedorController extends Controller
         try {
             $dto = ProveedorDTO::desdeArray($request->validated());
             $proveedor = $this->proveedorService->actualizar($id, $dto);
+            if (!$proveedor) {
+                return ApiResponse::noEncontrado('Proveedor no encontrado');
+            }
 
             return ApiResponse::exito(
                 $proveedor,

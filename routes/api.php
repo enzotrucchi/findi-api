@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
 |--------------------------------------------------------------------------
 */
 
+    Route::get('proveedores/movimientos', [ProveedorController::class, 'obtenerMovimientos']);
     Route::get('proveedores', [ProveedorController::class, 'obtenerColeccion']);
     Route::post('proveedores', [ProveedorController::class, 'crear']);
     Route::put('proveedores/{id}', [ProveedorController::class, 'actualizar']);

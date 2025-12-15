@@ -9,28 +9,17 @@ namespace App\DTOs\Proveedor;
  */
 class FiltroProveedorDTO
 {
-    /**
-     * Constructor.
-     *
-     * @param bool|null $soloActivos
-     * @param string|null $busqueda
-     */
-    public function __construct(
-        public readonly ?bool $soloActivos = null,
-        public readonly ?string $busqueda = null,
-    ) {}
+    private int $pagina = 1;
 
-    /**
-     * Crear DTO desde un array de datos.
-     *
-     * @param array<string, mixed> $datos
-     * @return self
-     */
-    public static function desdeArray(array $datos): self
+    public function __construct() {}
+
+    public function getPagina(): int
     {
-        return new self(
-            soloActivos: isset($datos['activos']) ? (bool) $datos['activos'] : null,
-            busqueda: $datos['busqueda'] ?? null,
-        );
+        return $this->pagina;
+    }
+
+    public function setPagina(int $pagina): void
+    {
+        $this->pagina = $pagina;
     }
 }

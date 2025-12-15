@@ -26,26 +26,6 @@ class ProveedorDTO
         public readonly string $fechaActualizacion,
     ) {}
 
-    /**
-     * Crear DTO desde un modelo Eloquent.
-     *
-     * @param Proveedor $proveedor
-     * @return self
-     */
-    public static function desdeModelo(Proveedor $proveedor): self
-    {
-        return new self(
-            id: $proveedor->id,
-            organizacionId: $proveedor->organizacion_id,
-            nombre: $proveedor->nombre,
-            email: $proveedor->email,
-            telefono: $proveedor->telefono,
-            activo: $proveedor->activo,
-            fechaCreacion: $proveedor->created_at->toIso8601String(),
-            fechaActualizacion: $proveedor->updated_at->toIso8601String(),
-        );
-    }
-
     public static function desdeArray(array $datos): self
     {
         return new self(

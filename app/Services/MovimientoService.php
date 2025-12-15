@@ -148,8 +148,6 @@ class MovimientoService
             'modo_pago_id' => $dto->modoPagoId,
         ]);
 
-
-
         $movimiento->fresh();
 
         $movimiento->load(['asociado', 'modoPago']);

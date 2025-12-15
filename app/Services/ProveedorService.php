@@ -34,17 +34,35 @@ class ProveedorService
      * @param bool $soloActivos
      * @return Collection<int, ProveedorDTO>
      */
-    public function obtenerColeccion(bool $soloActivos = false): Collection
+    public function obtenerColeccion(FiltroProveedorDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
     {
         $query = Proveedor::query();
 
-        if ($soloActivos) {
-            $query->where('activo', true);
+        $perPage  = 10;
+
+        return $query
+            ->orderBy('nombre', 'asc')
+            ->paginate(perPage: $perPage, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+    }
+
+    /**
+     * Obtener movimientos de un asociado por su ID.
+     *
+     * @param int $id
+     * @return Collection<int, mixed>|null
+     */
+    public function obtenerMovimientos(int $id): ?Collection
+    {
+        // Verificar que el asociado pertenezca a la organización seleccionada
+        $proveedor = Proveedor::query()
+            ->where('id', $id)
+            ->first();
+
+        if (!$proveedor) {
+            return null;
         }
 
-        $proveedores = $query->orderBy('nombre', 'asc')->get();
-
-        return $proveedores;
+        return $proveedor->movimientos()->with('modoPago')->orderBy('fecha', 'desc')->get();
     }
 
     /**
@@ -121,6 +139,15 @@ class ProveedorService
             throw new InvalidArgumentException('El email ya está registrado en esta organización.');
         }
 
+        /**
+         * Si el proveedor no corresponde a la organización seleccionada,
+         * no permitir la actualización.
+         */
+        $organizacionIdSeleccionada = $this->obtenerOrganizacionId();
+        if ($proveedor->organizacion_id !== $organizacionIdSeleccionada) {
+            throw new InvalidArgumentException('El proveedor no pertenece a la organización seleccionada.');
+        }
+
         // Normalizar datos
         $datosNormalizados = [];
 
@@ -168,29 +195,6 @@ class ProveedorService
 
             return $proveedor->delete();
         });
-    }
-
-    /**
-     * Buscar proveedores por término.
-     *
-     * @param string $termino
-     * @return Collection<int, ProveedorDTO>
-     */
-    public function buscar(string $termino): Collection
-    {
-        $terminoNormalizado = strtolower(trim($termino));
-
-        $query = Proveedor::query();
-
-        $proveedores = $query->where(function ($query) use ($terminoNormalizado) {
-            $query->whereRaw('LOWER(nombre) LIKE ?', ["%{$terminoNormalizado}%"])
-                ->orWhereRaw('LOWER(email) LIKE ?', ["%{$terminoNormalizado}%"])
-                ->orWhere('telefono', 'LIKE', "%{$terminoNormalizado}%");
-        })
-            ->orderBy('nombre', 'asc')
-            ->get();
-
-        return $proveedores->map(fn($proveedor) => ProveedorDTO::desdeModelo($proveedor));
     }
 
     /**
