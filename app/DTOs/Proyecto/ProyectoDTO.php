@@ -26,26 +26,6 @@ class ProyectoDTO
         public readonly string $fechaActualizacion,
     ) {}
 
-    /**
-     * Crear DTO desde un modelo Eloquent.
-     *
-     * @param Proyecto $proyecto
-     * @return self
-     */
-    public static function desdeModelo(Proyecto $proyecto): self
-    {
-        return new self(
-            id: $proyecto->id,
-            descripcion: $proyecto->descripcion,
-            montoActual: $proyecto->monto_actual,
-            montoObjetivo: $proyecto->monto_objetivo,
-            fechaAlta: $proyecto->fecha_alta,
-            fechaRealizacion: $proyecto->fecha_realizacion,
-            fechaCreacion: $proyecto->created_at->toIso8601String(),
-            fechaActualizacion: $proyecto->updated_at->toIso8601String(),
-        );
-    }
-
     public static function desdeArray(array $datos): self
     {
         return new self(
