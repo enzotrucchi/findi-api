@@ -7,11 +7,13 @@ use App\DTOs\Movimiento\FiltroMovimientoDTO;
 use App\Mail\ComprobanteMovimiento;
 use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use App\Models\Movimiento;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
 /**
@@ -104,8 +106,17 @@ class MovimientoService
         if ($movimiento->asociado && $movimiento->asociado->email) {
             try {
                 $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+
+                // Generar PDF en memoria
+                $pdfContent = null;
+                try {
+                    $pdfContent = $this->generarPdfComprobante($movimiento);
+                } catch (\Exception $e) {
+                    Log::error('Error al generar PDF de comprobante: ' . $e->getMessage());
+                }
+
                 Mail::to($movimiento->asociado->email)->send(
-                    new ComprobanteMovimiento($movimiento, $organizacionNombre)
+                    new ComprobanteMovimiento($movimiento, $organizacionNombre, $pdfContent)
                 );
             } catch (\Exception $e) {
                 // Log del error pero no falla la creación del movimiento
@@ -172,5 +183,59 @@ class MovimientoService
         }
 
         return $movimiento->delete();
+    }
+
+    /**
+     * Generar PDF del comprobante de movimiento en memoria.
+     *
+     * @param Movimiento $movimiento
+     * @return string|null Contenido binario del PDF generado
+     */
+    private function generarPdfComprobante(Movimiento $movimiento): ?string
+    {
+        try {
+            $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+
+            // Generar el PDF usando la vista
+            $pdf = Pdf::loadView('pdf.comprobante-movimiento', [
+                'movimiento' => $movimiento,
+                'organizacionNombre' => $organizacionNombre
+            ]);
+
+            // Retornar el contenido binario del PDF
+            return $pdf->output();
+        } catch (\Exception $e) {
+            Log::error('Error al generar PDF: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Generar y descargar PDF del comprobante de un movimiento.
+     *
+     * @param int $id
+     * @return \Illuminate\Http\Response|null
+     */
+    public function descargarComprobante(int $id)
+    {
+        $query = Movimiento::query();
+        $movimiento = $query->with(['asociado', 'modoPago', 'proyecto', 'proveedor', 'organizacion'])->find($id);
+
+        if (!$movimiento) {
+            return null;
+        }
+
+        $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+
+        $pdf = Pdf::loadView('pdf.comprobante-movimiento', [
+            'movimiento' => $movimiento,
+            'organizacionNombre' => $organizacionNombre
+        ]);
+
+        $fecha = \Carbon\Carbon::parse($movimiento->fecha)->format('Y-m-d');
+        $tipo = $movimiento->tipo;
+        $nombreArchivo = "comprobante_{$tipo}_{$movimiento->id}_{$fecha}.pdf";
+
+        return $pdf->download($nombreArchivo);
     }
 }
