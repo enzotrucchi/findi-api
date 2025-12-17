@@ -69,7 +69,7 @@ class AuthController extends Controller
             return response()->json([
                 'usuario'                      => [
                     'id'    => null,
-                    'name'  => $nombreGoogle,
+                    'nombre'  => $nombreGoogle,
                     'email' => $email,
                 ],
                 'status'                       => 'NEEDS_SIGNUP_FORM',
