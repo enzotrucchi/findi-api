@@ -102,4 +102,22 @@ class MovimientoController extends Controller
             return ApiResponse::error('Error al eliminar movimiento: ' . $e->getMessage(), 500);
         }
     }
+
+    /**
+     * Descargar comprobante en PDF de un movimiento.
+     */
+    public function descargarComprobante(int $id)
+    {
+        try {
+            $pdf = $this->movimientoService->descargarComprobante($id);
+
+            if (!$pdf) {
+                return ApiResponse::noEncontrado('Movimiento no encontrado');
+            }
+
+            return $pdf;
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al generar comprobante: ' . $e->getMessage(), 500);
+        }
+    }
 }

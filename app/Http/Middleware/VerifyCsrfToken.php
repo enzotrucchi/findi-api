@@ -12,7 +12,6 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        // Las rutas API usan Sanctum stateful (cookies + CSRF)
-        // No excluir nada aquí para mantener protección CSRF
+        'api/*',  // TODO: Re-habilitar CSRF cuando se solucione configuración de cookies cross-domain
     ];
 }

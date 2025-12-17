@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\Proyecto\FiltroProyectoDTO;
 use App\DTOs\Proyecto\ProyectoDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Proyecto\ProyectoRequest;
@@ -19,7 +20,10 @@ class ProyectoController extends Controller
     public function obtenerColeccion(Request $request): JsonResponse
     {
         try {
-            $proyectos = $this->proyectoService->obtenerColeccion();
+            $filtroDTO = new FiltroProyectoDTO();
+            $filtroDTO->setPagina(request()->input('pagina', 1));
+
+            $proyectos = $this->proyectoService->obtenerColeccion($filtroDTO);
 
             return ApiResponse::exito($proyectos, 'Proyectos obtenidos exitosamente');
         } catch (\Exception $e) {

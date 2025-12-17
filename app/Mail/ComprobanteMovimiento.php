@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Movimiento;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -18,7 +19,8 @@ class ComprobanteMovimiento extends Mailable
      */
     public function __construct(
         public Movimiento $movimiento,
-        public string $organizacionNombre
+        public string $organizacionNombre,
+        public ?string $pdfContent = null
     ) {}
 
     /**
@@ -49,6 +51,17 @@ class ComprobanteMovimiento extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        $attachments = [];
+
+        if ($this->pdfContent) {
+            $fecha = \Carbon\Carbon::parse($this->movimiento->fecha)->format('Y-m-d');
+            $tipo = $this->movimiento->tipo;
+            $nombreArchivo = "comprobante_{$tipo}_{$fecha}.pdf";
+
+            $attachments[] = Attachment::fromData(fn() => $this->pdfContent, $nombreArchivo)
+                ->withMime('application/pdf');
+        }
+
+        return $attachments;
     }
 }

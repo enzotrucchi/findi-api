@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use App\Models\Proyecto;
 use Illuminate\Support\Facades\Auth;
+use App\DTOs\Proyecto\FiltroProyectoDTO;
 
 /**
  * Servicio de Proyectos
@@ -25,13 +26,15 @@ class ProyectoService
      * Obtener todos los proyectos.
      *
      */
-    public function obtenerColeccion(): Collection
+    public function obtenerColeccion(FiltroProyectoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
     {
-        $proyectos = Proyecto::query()
-            ->orderBy('fecha_alta', 'desc')
-            ->get();
+        $query = Proyecto::query();
 
-        return $proyectos;
+        $perPage  = 10;
+
+        return $query
+            ->orderBy('fecha_alta', 'asc')
+            ->paginate(perPage: $perPage, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
     }
 
 
