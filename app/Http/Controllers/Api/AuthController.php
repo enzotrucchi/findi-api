@@ -275,23 +275,52 @@ class AuthController extends Controller
             // No hacemos que falle la respuesta si el email falla
         }
 
+        $resultado['asociado']->load('organizaciones');
+
+        $organizacionesActivas = $resultado['asociado']->organizaciones
+            ->filter(fn($org) => (bool) $org->pivot->activo);
+
+        $organizationsPayload = $organizacionesActivas->map(function ($org) {
+            return [
+                'id'               => $org->id,
+                'nombre'           => $org->nombre,
+                'fecha_alta'       => $org->fecha_alta,
+                'es_prueba'        => (bool) $org->es_prueba,
+                'fecha_fin_prueba' => $org->fecha_fin_prueba,
+                'es_admin'         => (bool) $org->pivot->es_admin,
+                'activo'           => (bool) $org->pivot->activo,
+            ];
+        })->values()->all();
+
         return response()->json([
-            'message' => 'Cuenta creada exitosamente',
-            'data'    => [
-                'organizacion' => [
-                    'id'     => $resultado['organizacion']->id,
-                    'nombre' => $resultado['organizacion']->nombre,
-                    'es_prueba' => (bool) $resultado['organizacion']->es_prueba,
-                    'fecha_fin_prueba' => $resultado['organizacion']->fecha_fin_prueba,
-                ],
-                'asociado'     => [
-                    'id'     => $resultado['asociado']->id,
-                    'nombre' => $resultado['asociado']->nombre,
-                    'email'  => $resultado['asociado']->email,
-                ],
-                'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
+            'usuario' => [
+                'id'     => $resultado['asociado']->id,
+                'nombre' => $resultado['asociado']->nombre,
+                'email'  => $resultado['asociado']->email,
             ],
+            'status' => 'DIRECT_LOGIN',
+            'organizaciones' => $organizationsPayload,
+            'message' => null,
+            'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
         ], 201);
+
+        // return response()->json([
+        //     'message' => 'Cuenta creada exitosamente',
+        //     'data'    => [
+        //         'organizacion' => [
+        //             'id'     => $resultado['organizacion']->id,
+        //             'nombre' => $resultado['organizacion']->nombre,
+        //             'es_prueba' => (bool) $resultado['organizacion']->es_prueba,
+        //             'fecha_fin_prueba' => $resultado['organizacion']->fecha_fin_prueba,
+        //         ],
+        //         'asociado'     => [
+        //             'id'     => $resultado['asociado']->id,
+        //             'nombre' => $resultado['asociado']->nombre,
+        //             'email'  => $resultado['asociado']->email,
+        //         ],
+        //         'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
+        //     ],
+        // ], 201);
     }
 
     /**
