@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\DTOs\Organizacion\OrganizacionDTO;
 use App\DTOs\Asociado\AsociadoDTO;
 use App\Http\Controllers\Controller;
+use App\Mail\BienvenidaAdmin;
 use App\Mail\BienvenidaAsociado;
 use App\Models\Asociado;
 use App\Models\Organizacion;
@@ -264,7 +265,7 @@ class AuthController extends Controller
 
         // Enviar email de bienvenida (fuera del try-catch de BD)
         try {
-            Mail::send(new BienvenidaAsociado(
+            Mail::send(new BienvenidaAdmin(
                 $resultado['asociado'],
                 $resultado['organizacion']->nombre
             ));
@@ -303,24 +304,6 @@ class AuthController extends Controller
             'message' => null,
             'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
         ], 201);
-
-        // return response()->json([
-        //     'message' => 'Cuenta creada exitosamente',
-        //     'data'    => [
-        //         'organizacion' => [
-        //             'id'     => $resultado['organizacion']->id,
-        //             'nombre' => $resultado['organizacion']->nombre,
-        //             'es_prueba' => (bool) $resultado['organizacion']->es_prueba,
-        //             'fecha_fin_prueba' => $resultado['organizacion']->fecha_fin_prueba,
-        //         ],
-        //         'asociado'     => [
-        //             'id'     => $resultado['asociado']->id,
-        //             'nombre' => $resultado['asociado']->nombre,
-        //             'email'  => $resultado['asociado']->email,
-        //         ],
-        //         'organizacion_seleccionada_id' => $resultado['asociado']->organizacion_seleccionada_id,
-        //     ],
-        // ], 201);
     }
 
     /**

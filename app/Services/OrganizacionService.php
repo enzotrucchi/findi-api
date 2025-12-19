@@ -57,9 +57,9 @@ class OrganizacionService
     public function crear(OrganizacionDTO $dto): Organizacion
     {
         // Validar que el nombre no exista
-        if ($this->existeNombre($dto->nombre)) {
-            throw new InvalidArgumentException('El nombre de organización ya está registrado.');
-        }
+        // if ($this->existeNombre($dto->nombre)) {
+        //     throw new InvalidArgumentException('El nombre de organización ya está registrado.');
+        // }
 
         // Validar fecha de fin de prueba
         if ($dto->esPrueba && $dto->fechaFinPrueba === null) {
@@ -92,9 +92,9 @@ class OrganizacionService
 
         // Validar nombre si cambió
         $nombreNormalizado = $this->normalizarNombre($dto->nombre);
-        if ($nombreNormalizado !== $organizacion->nombre && $this->existeNombre($nombreNormalizado, $id)) {
-            throw new InvalidArgumentException('El nombre de organización ya está registrado.');
-        }
+        // if ($nombreNormalizado !== $organizacion->nombre && $this->existeNombre($nombreNormalizado, $id)) {
+        //     throw new InvalidArgumentException('El nombre de organización ya está registrado.');
+        // }
 
         $organizacion->update([
             'nombre' => $nombreNormalizado,
