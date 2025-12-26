@@ -69,9 +69,18 @@ Route::post('auth/dev-login', function (Request $request) {
     ]);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
 
-    Route::post('organizaciones/{organizacion}/seleccionar', CambiarOrganizacionSeleccionadaController::class);
+// Rutas que permiten al usuario cambiar la organización seleccionada.
+// Estas rutas sólo requieren autenticación y deben permanecer accesibles
+// incluso si la organización actualmente seleccionada está deshabilitada.
+// Route::post('organizaciones/{organizacion}/seleccionar', CambiarOrganizacionSeleccionadaController::class)
+//     ->middleware('auth:sanctum');
+
+Route::post('organizaciones/seleccionar', [AuthController::class, 'seleccionarOrganizacion'])
+    ->middleware('auth:sanctum');
+
+// Grupo principal: requiere autenticación
+Route::middleware('auth:sanctum')->group(function () {
 
 
     /*
@@ -119,7 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
 | Rutas de Organizaciones
 |--------------------------------------------------------------------------
 */
-
+    // Route::middleware('auth:sanctum')->post('auth/seleccionar-organizacion', [AuthController::class, 'seleccionarOrganizacion']);
     Route::get('organizaciones', [OrganizacionController::class, 'obtenerColeccion']);
     Route::post('organizaciones', [OrganizacionController::class, 'crear']);
     Route::get('organizaciones/{id}', [OrganizacionController::class, 'obtener']);

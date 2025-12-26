@@ -121,7 +121,7 @@ class AsociadoService
     }
 
     /**
-     * Crear un nuevo asociado.
+     * Crear un nuevo asociado o vincular uno existente a la organización.
      *
      * @param AsociadoDTO $dto
      * @return Asociado
@@ -130,21 +130,30 @@ class AsociadoService
     public function crear(AsociadoDTO $dto): Asociado
     {
         $emailNormalizado = $this->normalizarEmail($dto->email);
-
-        // if ($this->existeEmail($emailNormalizado)) {
-        //     throw new InvalidArgumentException('El email ya está registrado.');
-        // }
-
         $orgId = $this->obtenerOrganizacionId();
 
         return DB::transaction(function () use ($dto, $emailNormalizado, $orgId) {
-            // Crear el asociado
-            $asociado = Asociado::create([
-                'nombre' => $this->normalizarNombre($dto->nombre),
-                'email' => $emailNormalizado,
-                'telefono' => $dto->telefono ? $this->normalizarTelefono($dto->telefono) : null,
-                'domicilio' => $dto->domicilio ? trim($dto->domicilio) : null,
-            ]);
+            // Buscar si el asociado ya existe por email
+            $asociado = Asociado::where('email', $emailNormalizado)->first();
+
+            $asociadoExistente = !is_null($asociado);
+
+            if (!$asociadoExistente) {
+                // Crear el asociado solo si no existe
+                $asociado = Asociado::create([
+                    'nombre' => $this->normalizarNombre($dto->nombre),
+                    'email' => $emailNormalizado,
+                    'telefono' => $dto->telefono ? $this->normalizarTelefono($dto->telefono) : null,
+                    'domicilio' => $dto->domicilio ? trim($dto->domicilio) : null,
+                ]);
+            }
+
+            // Verificar si ya está vinculado a esta organización
+            $yaVinculado = $asociado->organizaciones()->where('organizacion_id', $orgId)->exists();
+
+            if ($yaVinculado) {
+                throw new InvalidArgumentException('El asociado ya está vinculado a esta organización.');
+            }
 
             // Vincular con la organización
             $asociado->organizaciones()->attach($orgId, [
@@ -155,12 +164,11 @@ class AsociadoService
 
             $organizacionNombre = $asociado->organizaciones()->where('organizacion_id', $orgId)->first()->nombre;
 
-            if (!$emailNormalizado) {
-                return $asociado;
+            // Enviar email si tiene email válido
+            if ($emailNormalizado) {
+                // Siempre enviamos email, ya sea de bienvenida o de asociación a nueva organización
+                Mail::to($asociado->email)->send(new BienvenidaAsociado($asociado, $organizacionNombre));
             }
-
-            // Enviar email de bienvenida
-            Mail::to($asociado->email)->send(new BienvenidaAsociado($asociado, $organizacionNombre));
 
             return $asociado;
         });

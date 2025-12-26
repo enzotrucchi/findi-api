@@ -20,8 +20,7 @@
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 
-        <p style="display: inline-block; margin: 10px 0; padding: 5px 15px; background-color: #E0E7FF; color: #3730A3; border-radius: 5px; font-weight: bold;">Proximamente</p>
-        <p>En <span style="background: linear-gradient(90deg, #7C3AED, #EC4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Findi</span> vas a poder gestionar tus movimientos de manera eficiente junto a tu organización.</p>
+        <p>Ingresa a <a href="https://findiapp.com" target="_blank" style="color: #7C3AED; text-decoration: none;">Findi</a> Y empezá a gestionar tus movimientos.</p>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 

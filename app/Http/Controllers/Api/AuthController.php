@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Organizacion\SeleccionarOrganizacionRequest;
 
 class AuthController extends Controller
 {
@@ -27,8 +28,46 @@ class AuthController extends Controller
      */
     public function __construct(
         private OrganizacionService $organizacionService,
-        private AsociadoService $asociadoService,
     ) {}
+
+    public function seleccionarOrganizacion(SeleccionarOrganizacionRequest $request): JsonResponse
+    {
+        /** @var \App\Models\Asociado $user */
+        $user = Auth::user();
+
+        $orgId = (int) $request->input('organizacion_id');
+
+        // Verificar que el user pertenezca a esa org (pivot)
+        $pertenece = $user->organizaciones()
+            ->where('organizacion_id', $orgId)
+            ->wherePivot('activo', true)
+            ->exists();
+
+        if (! $pertenece) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'No perteneces a esa organización activa.',
+            ], 403);
+        }
+
+        // Verificar que la organización no esté deshabilitada
+        $org = Organizacion::find($orgId);
+        if ($org && isset($org->habilitada) && ! (bool) $org->habilitada) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'La organización está deshabilitada y no puede seleccionarse.',
+            ], 403);
+        }
+
+        // Persistir selección
+        $user->organizacion_seleccionada_id = $orgId;
+        $user->save();
+
+        return response()->json([
+            'ok' => true,
+            'organizacion_seleccionada_id' => $orgId,
+        ]);
+    }
 
     /**
      * Login/entrada con Google.
@@ -85,48 +124,24 @@ class AuthController extends Controller
         $asociado->google_id = $payload['sub'] ?? $asociado->google_id;
         $asociado->save();
 
-        // 5) Cargar organizaciones (con pivot) y filtrar solo las activas en pivot
+        // 5) Cargar organizaciones (con pivot).
+        // Enviamos al front todas las organizaciones con pivot->activo = true
+        // (incluyendo las que tengan `habilitada = false`) para que el usuario
+        // pueda ver que existen y su estado.
         $asociado->load('organizaciones');
         $organizacionesActivas = $asociado->organizaciones
             ->filter(fn($org) => (bool) $org->pivot->activo);
 
-        $orgCount  = $organizacionesActivas->count();
-        $adminOrgs = $organizacionesActivas->filter(
+        // Subconjunto de organizaciones que además están habilitadas
+        $organizacionesHabilitadas = $organizacionesActivas
+            ->filter(fn($org) => (bool) ($org->habilitada ?? true));
+
+        $orgCount  = $organizacionesHabilitadas->count();
+        $adminOrgs = $organizacionesHabilitadas->filter(
             fn($org) => (bool) $org->pivot->es_admin
         );
 
-        // 6) Resolver organización seleccionada (solo entre activas)
-        $orgSeleccionada = $this->resolveOrganizacionSeleccionadaForAsociado($asociado);
-
-        // 7) Determinar status del flujo
-        $status  = 'NEEDS_SIGNUP_FORM';
-        $message = null;
-
-        if ($orgCount === 0) {
-            // No tiene organizaciones activas → lo tratamos como que debe crear org
-            $status = 'NEEDS_SIGNUP_FORM';
-        } elseif ($orgCount === 1) {
-            $org = $organizacionesActivas->first();
-            if ($org->pivot->es_admin) {
-                $status = 'DIRECT_LOGIN';
-            } else {
-                $status  = 'ASSOCIATE_ONLY';
-                $message = 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.';
-            }
-        } else {
-            // Tiene 2+ organizaciones activas
-            if ($adminOrgs->count() === 0) {
-                $status  = 'ASSOCIATE_ONLY';
-                $message = 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.';
-            } else {
-                $status = 'NEEDS_ORG_SELECTION';
-            }
-        }
-
-        // 8) Autenticar usuario con sesión (Sanctum stateful)
-        auth()->login($asociado);
-
-        // 9) Mapear organizaciones activas para el front
+        // Map para payload (incluye las orgs deshabilitadas para que el front las vea)
         $organizationsPayload = $organizacionesActivas->map(function ($org) {
             return [
                 'id'               => $org->id,
@@ -136,8 +151,79 @@ class AuthController extends Controller
                 'fecha_fin_prueba' => $org->fecha_fin_prueba,
                 'es_admin'         => (bool) $org->pivot->es_admin,
                 'activo'           => (bool) $org->pivot->activo,
+                'habilitada'       => (bool) ($org->habilitada ?? true),
             ];
         })->values()->all();
+
+        // Si el usuario tiene organizaciones vinculadas pero ninguna está habilitada,
+        // devolvemos un bloqueo (403) pero igualmente incluimos las organizaciones
+        // en el payload para que el usuario vea que existen y su estado.
+        $hasAnyOrg = $asociado->organizaciones->count() > 0;
+        // if ($hasAnyOrg && $orgCount === 0) {
+        //     return response()->json([
+        //         'usuario' => null,
+        //         'status'  => 'DISABLED_SELECTED',
+        //         'organizaciones' => $organizationsPayload,
+        //         'message' => 'La organización ha sido deshabilitada. Contacta al administrador.',
+        //         'organizacion_seleccionada_id' => null,
+        //     ], 403);
+        // }
+
+        // Nota: la comprobación de organización seleccionada deshabilitada se gestiona
+        // más abajo según el número de organizaciones activas (si tiene 2+ orgs,
+        // forzamos selección en lugar de bloquear aquí).
+
+        // 6) Resolver organización seleccionada (solo entre activas)
+        $orgSeleccionada = $this->resolveOrganizacionSeleccionadaForAsociado($asociado);
+
+        // 7) Determinar status del flujo
+        // - Usamos el conteo de organizaciones con pivot->activo (organizacionesActivas)
+        //   para decidir si el usuario debe elegir organización cuando tiene más de una.
+        // - Para permitir el login consideramos únicamente las organizaciones habilitadas.
+        $status  = 'NEEDS_SIGNUP_FORM';
+        $message = null;
+
+        $activasCount = $organizacionesActivas->count();
+        $habilitadasCount = $organizacionesHabilitadas->count();
+
+        if ($habilitadasCount === 0) {
+            // No hay ninguna organización habilitada -> debe crear/esperar (y antes ya devolvemos 403)
+            $status = 'NEEDS_SIGNUP_FORM';
+        } elseif ($activasCount === 0) {
+            // No pertenece a ninguna organización activa
+            $status = 'NEEDS_SIGNUP_FORM';
+        } elseif ($activasCount === 1) {
+            // Si sólo tiene 1 organización activa, permitimos login directo para admin,
+            // o mostramos mensaje de asociado si no es admin (siempre y cuando la org esté habilitada)
+            $org = $organizacionesActivas->first();
+            if ((bool) ($org->habilitada ?? true)) {
+                if ($org->pivot->es_admin) {
+                    $status = 'DIRECT_LOGIN';
+                } else {
+                    $status  = 'ASSOCIATE_ONLY';
+                    $message = 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.';
+                }
+            } else {
+                // La única org activa está deshabilitada -> se maneja más arriba (403), pero como fallback:
+                $status = 'NEEDS_SIGNUP_FORM';
+            }
+        } else {
+            // Tiene 2+ organizaciones activas -> siempre forzamos selección de org
+            $status = 'NEEDS_ORG_SELECTION';
+        }
+
+        // 8) Autenticar usuario con sesión (Sanctum stateful)
+        auth()->login($asociado);
+
+        // Decidir qué organizacion_seleccionada_id devolver en la respuesta:
+        // - Si el usuario tiene más de una organización activa, forzamos null
+        //   para que el frontend muestre el selector y no se confíe en la última seleccionada.
+        $responseSelectedId = $asociado->organizacion_seleccionada_id;
+        if ($activasCount > 1) {
+            $responseSelectedId = null;
+        }
+
+        // organizationsPayload ya fue construido arriba (incluye orgs deshabilitadas)
 
         return response()->json([
             // No enviamos token, usamos cookies de sesión
@@ -149,7 +235,7 @@ class AuthController extends Controller
             'status'                       => $status,
             'organizaciones'               => $organizationsPayload,
             'message'                      => $message,
-            'organizacion_seleccionada_id' => $asociado->organizacion_seleccionada_id,
+            'organizacion_seleccionada_id' => $responseSelectedId,
         ]);
     }
 
@@ -212,19 +298,21 @@ class AuthController extends Controller
                 /** @var \App\Models\Organizacion $organizacion */
                 $organizacion = $this->organizacionService->crear($organizacionDTO);
 
-                // 2. Crear el asociado directamente (sin servicio, ya que no hay usuario autenticado)
+                // 2. Buscar o crear el asociado
                 $emailNormalizado = strtolower(trim($validated['email']));
 
-                // Verificar que no exista el email
-                if (Asociado::where('email', $emailNormalizado)->exists()) {
-                    throw new \InvalidArgumentException('El email ya está registrado.');
-                }
-
                 /** @var \App\Models\Asociado $asociadoModel */
-                $asociadoModel = Asociado::create([
-                    'nombre' => trim($validated['nombre_usuario']),
-                    'email' => $emailNormalizado,
-                ]);
+                $asociadoModel = Asociado::where('email', $emailNormalizado)->first();
+
+                $asociadoExistente = !is_null($asociadoModel);
+
+                if (!$asociadoExistente) {
+                    // Crear nuevo asociado solo si no existe
+                    $asociadoModel = Asociado::create([
+                        'nombre' => trim($validated['nombre_usuario']),
+                        'email' => $emailNormalizado,
+                    ]);
+                }
 
                 // 3. Vincular el asociado con la organización en la tabla pivot
                 $asociadoModel->organizaciones()->attach($organizacion->id, [
@@ -243,6 +331,7 @@ class AuthController extends Controller
                 return [
                     'organizacion' => $organizacion,
                     'asociado'     => $asociadoModel,
+                    'asociado_existente' => $asociadoExistente,
                 ];
             });
         } catch (\InvalidArgumentException $e) {
@@ -277,7 +366,10 @@ class AuthController extends Controller
         }
 
         $resultado['asociado']->load('organizaciones');
+        $resultado['asociado']->load('organizaciones');
 
+        // En crearCuenta devolvemos todas las organizaciones con pivot->activo = true
+        // (incluyendo las deshabilitadas) para que el frontend las muestre.
         $organizacionesActivas = $resultado['asociado']->organizaciones
             ->filter(fn($org) => (bool) $org->pivot->activo);
 
@@ -290,6 +382,7 @@ class AuthController extends Controller
                 'fecha_fin_prueba' => $org->fecha_fin_prueba,
                 'es_admin'         => (bool) $org->pivot->es_admin,
                 'activo'           => (bool) $org->pivot->activo,
+                'habilitada'       => (bool) ($org->habilitada ?? true),
             ];
         })->values()->all();
 
@@ -317,9 +410,9 @@ class AuthController extends Controller
     {
         $asociado->loadMissing('organizaciones');
 
-        // Solo organizaciones con membresía activa
+        // Solo organizaciones con membresía activa y además habilitadas
         $activas = $asociado->organizaciones->filter(
-            fn($org) => (bool) $org->pivot->activo
+            fn($org) => (bool) $org->pivot->activo && (bool) ($org->habilitada ?? true)
         );
 
         if ($activas->isEmpty()) {

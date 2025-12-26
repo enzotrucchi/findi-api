@@ -28,6 +28,7 @@ class Organizacion extends Model
         'fecha_alta',
         'es_prueba',
         'fecha_fin_prueba',
+        'habilitada',
     ];
 
     /**
@@ -37,6 +38,7 @@ class Organizacion extends Model
      */
     protected $casts = [
         'es_prueba' => 'boolean',
+        'habilitada' => 'boolean',
     ];
 
     /**

@@ -30,6 +30,12 @@ class CambiarOrganizacionSeleccionadaController extends Controller
             abort(403, 'No tenés acceso activo a esta organización.');
         }
 
+        // Además verificamos que la organización esté habilitada (no permitir seleccionar
+        // una org deshabilitada).
+        if (isset($organizacion->habilitada) && ! (bool) $organizacion->habilitada) {
+            abort(403, 'La organización seleccionada está deshabilitada.');
+        }
+
         $user->organizacion_seleccionada_id = $organizacion->id;
         $user->save();
 
