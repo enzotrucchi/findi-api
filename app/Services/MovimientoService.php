@@ -37,7 +37,7 @@ class MovimientoService
     {
         $query = Movimiento::query();
 
-        $query->with(['asociado', 'modoPago']);
+        $query->with(['asociado', 'modoPago', 'proyecto', 'proveedor']);
 
         if ($filtroDTO->getFechaDesde()) {
             $query->where('fecha', '>=', $filtroDTO->getFechaDesde());
@@ -161,7 +161,7 @@ class MovimientoService
 
         $movimiento->fresh();
 
-        $movimiento->load(['asociado', 'modoPago']);
+        $movimiento->load(['asociado', 'modoPago', 'proyecto', 'proveedor']);
 
         return $movimiento;
     }
