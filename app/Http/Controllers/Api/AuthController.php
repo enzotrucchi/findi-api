@@ -48,7 +48,7 @@ class AuthController extends Controller
         if ($org && isset($org->habilitada) && ! (bool) $org->habilitada) {
             return response()->json([
                 'ok' => false,
-                'message' => 'La organización está deshabilitada y no puede seleccionarse.',
+                'message' => 'La organización está deshabilitada. Contactanos a hola@findiapp.com',
             ], 403);
         }
 
@@ -243,15 +243,25 @@ class AuthController extends Controller
     private function mapOrganizacionesPayload($organizacionesActivas): array
     {
         return $organizacionesActivas->map(function ($org) {
+            // Obtener el asociado admin de la organización
+            $adminAsociado = $org->asociados()
+                ->wherePivot('es_admin', true)
+                ->first();
+
             return [
                 'id'               => $org->id,
                 'nombre'           => $org->nombre,
                 'fecha_alta'       => $org->fecha_alta,
                 'es_prueba'        => (bool) $org->es_prueba,
                 'fecha_fin_prueba' => $org->fecha_fin_prueba,
-                'es_admin'         => (bool) $org->pivot->es_admin,
+                'es_admin'         => (bool) $adminAsociado && $adminAsociado->id === auth()->id(),
                 'activo'           => (bool) $org->pivot->activo,
                 'habilitada'       => (bool) ($org->habilitada ?? true),
+                'usuario_admin'    => $adminAsociado ? [
+                    'id'     => $adminAsociado->id,
+                    'nombre' => $adminAsociado->nombre,
+                    'email'  => $adminAsociado->email,
+                ] : null,
             ];
         })->values()->all();
     }

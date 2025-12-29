@@ -15,6 +15,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('organizaciones:recordatorio-prueba')->dailyAt('11:00');
         // Deshabilitar organizaciones cuya prueba ya venció
         $schedule->command('organizaciones:deshabilitar-prueba-vencida')->dailyAt('00:05');
+        // Enviar reporte diario de organizaciones próximas a vencer
+        $schedule->command('organizaciones:reporte-proximas-a-vencer')->dailyAt('11:00');
     }
 
     /**
