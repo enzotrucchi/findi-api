@@ -24,11 +24,11 @@
             <p style="margin: 0; color: #92400E;">
                 <strong>Tiempo de prueba:</strong>
                 @if ($diasRestantes === 0)
-                    Tu periodo de prueba finaliza <strong>hoy</strong>.
+                Tu periodo de prueba finaliza <strong>hoy</strong>.
                 @elseif ($diasRestantes === 1)
-                    Te queda <strong>1 día</strong> de prueba.
+                Te queda <strong>1 día</strong> de prueba.
                 @else
-                    Te quedan <strong>{{ $diasRestantes }} días</strong> de prueba.
+                Te quedan <strong>{{ $diasRestantes }} días</strong> de prueba.
                 @endif
             </p>
             <p style="margin: 10px 0 0; color: #92400E;">
@@ -36,7 +36,14 @@
             </p>
         </div>
 
-        <p>Si necesitas ayuda para continuar con tu plan o quieres conocer opciones, estamos disponibles para asistirte.</p>
+        <p>Si necesitas ayuda para continuar con tu plan o quieres conocer opciones, escribenos a
+            <span>
+                <a href="mailto:hola@findiapp.com" style="color: #3B82F6; text-decoration: none;">
+                    hola@findiapp.com
+                </a>
+            </span>
+            .
+        </p>
 
         <p>Saludos,<br>
             <strong>El equipo de Findi</strong>

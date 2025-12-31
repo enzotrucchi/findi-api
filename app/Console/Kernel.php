@@ -17,6 +17,18 @@ class Kernel extends ConsoleKernel
         $schedule->command('organizaciones:deshabilitar-prueba-vencida')->dailyAt('00:05');
         // Enviar reporte diario de organizaciones próximas a vencer
         $schedule->command('organizaciones:reporte-proximas-a-vencer')->dailyAt('11:00');
+
+        // Sistema de facturación
+        // Generar facturas mensuales el primer día de cada mes a las 00:00
+        $schedule->command('facturas:generar-mensuales')->monthlyOn(1, '00:00');
+        // Marcar facturas vencidas y bloquear organizaciones diariamente a las 01:00
+        $schedule->command('facturas:marcar-vencidas')->dailyAt('01:00');
+
+        // Sistema de facturación mensual
+        // Generar registros de facturación el día 1 de cada mes a las 00:30
+        $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '00:30');
+        // Enviar emails de facturación del día 1 al 5 de cada mes a las 09:00
+        $schedule->command('facturacion:enviar-emails')->cron('0 9 1-5 * *');
     }
 
     /**

@@ -28,6 +28,7 @@ class Organizacion extends Model
         'fecha_alta',
         'es_prueba',
         'fecha_fin_prueba',
+        'fecha_vencimiento',
         'habilitada',
     ];
 
@@ -39,6 +40,7 @@ class Organizacion extends Model
     protected $casts = [
         'es_prueba' => 'boolean',
         'habilitada' => 'boolean',
+        'fecha_vencimiento' => 'date',
     ];
 
     /**
@@ -61,5 +63,108 @@ class Organizacion extends Model
         return $this->belongsToMany(Asociado::class, 'asociado_organizacion')
             ->withPivot('fecha_alta', 'fecha_baja', 'activo')
             ->withTimestamps();
+    }
+
+    /**
+     * Obtener las facturas de la organización.
+     *
+     * @return HasMany
+     */
+    public function facturas(): HasMany
+    {
+        return $this->hasMany(Factura::class);
+    }
+
+    /**
+     * Obtener la facturación de la organización.
+     *
+     * @return HasMany
+     */
+    public function facturacion(): HasMany
+    {
+        return $this->hasMany(Facturacion::class);
+    }
+
+    /**
+     * Verificar si la organización está habilitada.
+     *
+     * @return bool
+     */
+    public function estaHabilitada(): bool
+    {
+        return $this->habilitada;
+    }
+
+    /**
+     * Verificar si la organización tiene acceso (habilitada y no vencida).
+     *
+     * @return bool
+     */
+    public function tieneAcceso(): bool
+    {
+        // Debe estar habilitada
+        if (!$this->habilitada) {
+            return false;
+        }
+
+        // Si es prueba y no ha vencido
+        if ($this->es_prueba && $this->fecha_fin_prueba && now()->lte($this->fecha_fin_prueba)) {
+            return true;
+        }
+
+        // Si no es prueba, verificar fecha de vencimiento
+        if (!$this->es_prueba && $this->fecha_vencimiento && now()->lte($this->fecha_vencimiento)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verificar si la organización está vencida.
+     *
+     * @return bool
+     */
+    public function estaVencida(): bool
+    {
+        if ($this->es_prueba && $this->fecha_fin_prueba) {
+            return now()->isAfter($this->fecha_fin_prueba);
+        }
+
+        if (!$this->es_prueba && $this->fecha_vencimiento) {
+            return now()->isAfter($this->fecha_vencimiento);
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtener la cantidad de asociados activos.
+     *
+     * @return int
+     */
+    public function cantidadAsociadosActivos(): int
+    {
+        return $this->asociados()->wherePivot('activo', true)->count();
+    }
+
+    /**
+     * Deshabilitar la organización.
+     *
+     * @return void
+     */
+    public function deshabilitar(): void
+    {
+        $this->update(['habilitada' => false]);
+    }
+
+    /**
+     * Habilitar la organización.
+     *
+     * @return void
+     */
+    public function habilitar(): void
+    {
+        $this->update(['habilitada' => true]);
     }
 }
