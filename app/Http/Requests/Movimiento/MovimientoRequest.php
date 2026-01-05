@@ -39,7 +39,7 @@ class MovimientoRequest extends FormRequest
 
 
         return [
-            'tipo' => ['required', 'in:ingreso,egreso'],
+            'tipo' => ['required', 'in:ingreso,egreso,inicial'],
             'monto' => ['required', 'numeric', 'min:0'],
             'fecha' => ['required', 'date'],
             'detalle' => ['nullable', 'string', 'max:1000'],
@@ -59,8 +59,7 @@ class MovimientoRequest extends FormRequest
     {
         return [
             'tipo.required' => 'El tipo de movimiento es obligatorio.',
-            'tipo.in' => 'El tipo de movimiento debe ser "ingreso" o "
-egreso".',
+            'tipo.in' => 'El tipo de movimiento debe ser "ingreso", "egreso" o "inicial".',
             'monto.required' => 'El monto es obligatorio.',
             'monto.numeric' => 'El monto debe ser un número.',
             'monto.min' => 'El monto no puede ser negativo.',

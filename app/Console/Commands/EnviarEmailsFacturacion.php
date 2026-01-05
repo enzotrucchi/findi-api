@@ -17,7 +17,9 @@ class EnviarEmailsFacturacion extends Command
      *
      * @var string
      */
-    protected $signature = 'facturacion:enviar-emails {--periodo= : Periodo en formato YYYY-MM (por defecto el mes actual)}';
+    protected $signature = 'facturacion:enviar-emails
+        {--periodo= : Periodo en formato YYYY-MM (por defecto el mes actual)}
+        {--save-html : Guarda el HTML del email en storage/app/mails (solo para debug)}';
 
     /**
      * The console command description.
@@ -84,24 +86,26 @@ class EnviarEmailsFacturacion extends Command
 
                 $mailable = new FacturacionMensual($facturacion);
 
-                // Renderizar vista del email
-                $emailHtml = view('emails.facturacion-mensual', [
-                    'organizacion' => $facturacion->organizacion,
-                    'monto' => $monto,
-                    'periodoVisual' => $mailable->periodoVisual,
-                    'cantidadAsociados' => $facturacion->cantidad_asociados,
-                    'adminNombres' => $mailable->adminNombres,
-                ])->render();
+                if ($this->option('save-html')) {
+                    // Renderizar vista del email
+                    $emailHtml = view('emails.facturacion-mensual', [
+                        'organizacion' => $facturacion->organizacion,
+                        'monto' => $monto,
+                        'periodoVisual' => $mailable->periodoVisual,
+                        'cantidadAsociados' => $facturacion->cantidad_asociados,
+                        'adminNombres' => $mailable->adminNombres,
+                    ])->render();
 
-                // Guardar email como archivo HTML para visualización
-                $emailsPath = storage_path('app/emails');
-                if (!file_exists($emailsPath)) {
-                    mkdir($emailsPath, 0755, true);
+                    // Guardar email como archivo HTML para visualización
+                    $mailsPath = storage_path('app/mails');
+                    if (!file_exists($mailsPath)) {
+                        mkdir($mailsPath, 0755, true);
+                    }
+                    $safeName = Str::slug($facturacion->organizacion->nombre);
+                    $periodoSlug = str_replace('-', '', $facturacion->periodo);
+                    $filename = "facturacion_{$facturacion->organizacion->id}_{$safeName}_{$periodoSlug}.html";
+                    file_put_contents("{$mailsPath}/{$filename}", $emailHtml);
                 }
-                $safeName = Str::slug($facturacion->organizacion->nombre);
-                $periodoSlug = str_replace('-', '', $facturacion->periodo);
-                $filename = "facturacion_{$facturacion->organizacion->id}_{$safeName}_{$periodoSlug}.html";
-                file_put_contents("{$emailsPath}/{$filename}", $emailHtml);
 
                 // Enviar email
                 Mail::to($email)->send($mailable);

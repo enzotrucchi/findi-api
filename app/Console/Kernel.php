@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('organizaciones:recordatorio-prueba')->dailyAt('11:00');
         // Deshabilitar organizaciones cuya prueba ya venció
-        $schedule->command('organizaciones:deshabilitar-prueba-vencida')->dailyAt('00:05');
+        $schedule->command('organizaciones:deshabilitar-prueba-vencida')->dailyAt('02:00');
         // Enviar reporte diario de organizaciones próximas a vencer
         $schedule->command('organizaciones:reporte-proximas-a-vencer')->dailyAt('11:00');
 
@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
 
         // Sistema de facturación mensual
         // Generar registros de facturación el día 1 de cada mes a las 00:30
-        $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '00:30');
+        $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '01:00');
         // Enviar emails de facturación del día 1 al 5 de cada mes a las 09:00
         $schedule->command('facturacion:enviar-emails')->cron('0 9 1-5 * *');
     }

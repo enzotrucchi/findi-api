@@ -190,6 +190,11 @@ class AuthController extends Controller
                 'message' => 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.',
                 'organizacion_seleccionada_id' => null,
                 'asociado_existente' => true,
+                'usuario' => [
+                    'id' => $asociado->id,
+                    'nombre' => $asociado->nombre,
+                    'email' => $asociado->email,
+                ],
             ]);
         }
 

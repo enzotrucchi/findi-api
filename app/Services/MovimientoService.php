@@ -62,13 +62,15 @@ class MovimientoService
     {
         $query = Movimiento::query();
 
+        $inicial = (clone $query)->where('tipo', 'inicial')->sum('monto');
         $ingresos = (clone $query)->where('tipo', 'ingreso')->sum('monto');
         $egresos = (clone $query)->where('tipo', 'egreso')->sum('monto');
 
         return [
+            'inicial' => $inicial,
             'ingresos' => $ingresos,
             'egresos' => $egresos,
-            'balance' => $ingresos - $egresos,
+            'balance' => $inicial + $ingresos - $egresos,
         ];
     }
 
