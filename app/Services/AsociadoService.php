@@ -152,7 +152,7 @@ class AsociadoService
             $yaVinculado = $asociado->organizaciones()->where('organizacion_id', $orgId)->exists();
 
             if ($yaVinculado) {
-                throw new InvalidArgumentException('El asociado ya está vinculado a esta organización.');
+                throw new InvalidArgumentException('El asociado ya está vinculado a esta organización.', 422);
             }
 
             // Vincular con la organización

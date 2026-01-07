@@ -33,25 +33,95 @@ class MovimientoService
      * @param FiltroMovimientoDTO $filtroDTO
      * @return \Illuminate\Pagination\LengthAwarePaginator
      */
-    public function obtenerColeccion(FiltroMovimientoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
+    // public function obtenerColeccion(FiltroMovimientoDTO $filtroDTO): \Illuminate\Pagination\LengthAwarePaginator
+    // {
+    //     $query = Movimiento::query();
+
+    //     $query->with(['asociado', 'modoPago', 'proyecto', 'proveedor']);
+
+    //     if ($filtroDTO->getFechaDesde()) {
+    //         $query->where('fecha', '>=', $filtroDTO->getFechaDesde());
+    //     }
+
+    //     if ($filtroDTO->getFechaHasta()) {
+    //         $query->where('fecha', '<=', $filtroDTO->getFechaHasta());
+    //     }
+
+    //     return $query
+    //         ->orderBy('fecha', 'desc')
+    //         ->orderBy('hora', 'desc')
+    //         ->paginate(perPage: 10, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+    // }
+    public function obtenerColeccion(FiltroMovimientoDTO $filtroDTO): array
     {
-        $query = Movimiento::query();
+        // Base query: ya viene filtrada por org gracias al scope
+        $baseQuery = Movimiento::query();
 
-        $query->with(['asociado', 'modoPago', 'proyecto', 'proveedor']);
+        // ===== KPIs GLOBAL (sin filtros) =====
+        $kpisGlobal = $this->calcularKpis(clone $baseQuery);
 
-        if ($filtroDTO->getFechaDesde()) {
-            $query->where('fecha', '>=', $filtroDTO->getFechaDesde());
-        }
+        // ===== KPIs FILTRADOS (con filtros) =====
+        $kpiFiltradosQuery = clone $baseQuery;
+        $this->aplicarFiltros($kpiFiltradosQuery, $filtroDTO);
+        $kpisFiltrados = $this->calcularKpis($kpiFiltradosQuery);
 
-        if ($filtroDTO->getFechaHasta()) {
-            $query->where('fecha', '<=', $filtroDTO->getFechaHasta());
-        }
+        // ===== TABLA (con filtros + relaciones + paginación) =====
+        $tableQuery = clone $baseQuery;
+        $tableQuery->with(['asociado', 'modoPago', 'proyecto', 'proveedor']);
+        $this->aplicarFiltros($tableQuery, $filtroDTO);
 
-        return $query
+        $paginacion = $tableQuery
             ->orderBy('fecha', 'desc')
             ->orderBy('hora', 'desc')
             ->paginate(perPage: 10, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+
+        return [
+            'kpis' => [
+                'global' => $kpisGlobal,
+                'filtrados' => $kpisFiltrados,
+            ],
+            'paginacion' => $paginacion,
+        ];
     }
+
+    private function aplicarFiltros($query, FiltroMovimientoDTO $filtroDTO): void
+    {
+        if ($filtroDTO->getFechaDesde()) {
+            $query->whereDate('fecha', '>=', $filtroDTO->getFechaDesde());
+        }
+
+        if ($filtroDTO->getFechaHasta()) {
+            $query->whereDate('fecha', '<=', $filtroDTO->getFechaHasta());
+        }
+    }
+
+    private function calcularKpis($query): array
+    {
+        $row = $query->selectRaw("
+        COUNT(*) as total_movimientos,
+        SUM(CASE WHEN tipo = 'ingreso' THEN 1 ELSE 0 END) as ingresos_count,
+        SUM(CASE WHEN tipo = 'egreso' THEN 1 ELSE 0 END) as egresos_count,
+        SUM(CASE WHEN tipo = 'inicial' THEN 1 ELSE 0 END) as inicial_count,
+        SUM(CASE WHEN status = 'pendiente' THEN 1 ELSE 0 END) as pendientes_count,
+        COALESCE(SUM(CASE WHEN tipo IN ('ingreso','inicial') THEN monto ELSE 0 END),0) as ingresos_sum,
+        COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END),0) as egresos_sum
+    ")->first();
+
+        $ingresos = (float) ($row->ingresos_sum ?? 0);
+        $egresos  = (float) ($row->egresos_sum ?? 0);
+
+        return [
+            'total_movimientos' => (int) ($row->total_movimientos ?? 0),
+            'ingresos_count' => (int) ($row->ingresos_count ?? 0),
+            'egresos_count' => (int) ($row->egresos_count ?? 0),
+            'inicial_count' => (int) ($row->inicial_count ?? 0),
+            'pendientes_count' => (int) ($row->pendientes_count ?? 0),
+            'ingresos_sum' => $ingresos,
+            'egresos_sum' => $egresos,
+            'saldo' => $ingresos - $egresos,
+        ];
+    }
+
 
     /**
      * Obtener balance (sum de ingresos y egresos).

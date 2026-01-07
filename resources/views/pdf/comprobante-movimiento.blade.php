@@ -175,6 +175,7 @@
         </div>
 
         <!-- Info del Asociado -->
+        @if($movimiento->asociado)
         <div style="margin-bottom: 30px;">
             <div style="font-size: 12px; color: #999; margin-bottom: 4px;">ASOCIADO</div>
             <div style="font-size: 16px; font-weight: 600; color: #1a1a1a;">{{ $movimiento->asociado->nombre }}</div>
@@ -182,6 +183,7 @@
             <div style="font-size: 13px; color: #666; margin-top: 2px;">{{ $movimiento->asociado->email }}</div>
             @endif
         </div>
+        @endif
 
         <!-- Monto Principal -->
         <div class="comprobante-box">
@@ -257,7 +259,9 @@
         <div class="footer">
             <div class="signature">
                 <div style="font-weight: 600; color: #1a1a1a;">{{ $organizacionNombre }}</div>
-                <div style="font-size: 11px; color: #999; margin-top: 4px;">Powered by Findi</div>
+                <div style="font-size: 11px; color: #999; margin-top: 4px;">
+                    Powered by Findi - <a href="https://findiapp.com" style="color: #666; text-decoration: none;">findiapp.com</a>
+                </div>
             </div>
             <p class="footer-text" style="margin-top: 20px;">
                 Comprobante generado automáticamente el {{ \Carbon\Carbon::now()->format('d/m/Y') }} a las {{ \Carbon\Carbon::now()->format('H:i') }}hs.

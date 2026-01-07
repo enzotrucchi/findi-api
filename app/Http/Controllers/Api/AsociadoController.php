@@ -73,7 +73,7 @@ class AsociadoController extends Controller
 
             return ApiResponse::creado($asociado, 'Asociado creado exitosamente');
         } catch (InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 400);
+            return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
             return ApiResponse::error('Error al crear asociado: ' . $e->getMessage(), 500);
         }

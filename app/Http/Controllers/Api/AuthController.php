@@ -83,7 +83,9 @@ class AuthController extends Controller
         /** @var \App\Models\Asociado|null $asociado */
         $asociado = Asociado::where('email', $email)->first();
 
-        // No existe -> signup (sin sesión)
+        /**
+         * Caso 1: No existe asociado -> signup
+         */
         if (! $asociado) {
             return response()->json([
                 'usuario' => [
@@ -99,7 +101,9 @@ class AuthController extends Controller
             ]);
         }
 
-        // Existe -> actualizar perfil
+        /**
+         * Caso 2: Existe asociado -> varios sub-casos según organizaciones activas, estado, rol, intent, etc.
+         */
         $asociado->nombre    = $nombreGoogle;
         $asociado->google_id = $payload['sub'] ?? $asociado->google_id;
         $asociado->save();
@@ -113,8 +117,29 @@ class AuthController extends Controller
 
         $organizationsPayload = $this->mapOrganizacionesPayload($organizacionesActivas);
 
-        // Caso: 2+ org activas -> selección (siempre)
+        /**
+         * Caso 2.1: >1 org activa -> elegir organización
+         */
+        // Caso 2.1: >1 org activa
         if ($activasCount > 1) {
+
+            // ✅ Si es signup, permitir crear nueva org sin elegir org
+            if ($intent === 'signup') {
+                return response()->json([
+                    'usuario' => [
+                        'id' => $asociado->id,
+                        'nombre' => $asociado->nombre,
+                        'email' => $asociado->email,
+                    ],
+                    'status' => 'NEEDS_SIGNUP_FORM',
+                    'organizaciones' => $organizationsPayload,
+                    'message' => 'Tu usuario ya existe y tiene varias organizaciones activas. Podés crear una nueva organización para continuar.',
+                    'organizacion_seleccionada_id' => null,
+                    'asociado_existente' => true,
+                ]);
+            }
+
+            // LOGIN normal: elegir organización
             auth()->login($asociado);
 
             return response()->json([
@@ -131,7 +156,9 @@ class AuthController extends Controller
             ]);
         }
 
-        // Caso: 0 org activas -> signup
+        /**
+         * Caso 2.2: 0 org activas -> signup
+         */
         if ($activasCount === 0) {
             return response()->json([
                 'usuario' => [
@@ -147,11 +174,15 @@ class AuthController extends Controller
             ]);
         }
 
-        // Caso: 1 org activa
+        /**
+         * Caso 2.3: 1 org activa -> login o signup según estado, rol, intent, etc.
+         */
         $org = $organizacionesActivas->first();
         $orgHabilitada = (bool) ($org->habilitada ?? true);
 
-        // Si está deshabilitada:
+        /**
+         * Caso 2.3: Org no habilitada -> signup o login según intent
+         */
         if (! $orgHabilitada) {
             // LOGIN: quedarse en login (sin sesión)
             if ($intent === 'login') {
@@ -180,9 +211,25 @@ class AuthController extends Controller
             ]);
         }
 
-        // Org habilitada: admin => login directo; no admin => asociado-only
+        // Org habilitada: admin => login directo; no admin => depende del intent
         if (! (bool) $org->pivot->es_admin) {
-            // sin sesión
+            // SIGNUP: permitir avanzar al formulario de creación de organización
+            if ($intent === 'signup') {
+                return response()->json([
+                    'usuario' => [
+                        'id' => $asociado->id,
+                        'nombre' => $asociado->nombre,
+                        'email' => $asociado->email,
+                    ],
+                    'status' => 'NEEDS_SIGNUP_FORM',
+                    'organizaciones' => $organizationsPayload,
+                    'message' => 'Tu cuenta está asociada como miembro a una organización activa. Podés crear una nueva organización para continuar.',
+                    'organizacion_seleccionada_id' => null,
+                    'asociado_existente' => true,
+                ]);
+            }
+
+            // LOGIN: asociado sin permisos de admin, acceso no habilitado
             return response()->json([
                 'usuario' => null,
                 'status' => 'ASSOCIATE_ONLY',
@@ -190,11 +237,22 @@ class AuthController extends Controller
                 'message' => 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.',
                 'organizacion_seleccionada_id' => null,
                 'asociado_existente' => true,
+            ]);
+        }
+
+        // Org habilitada y es admin: si viene intent=signup, permitir crear otra org
+        if ($intent === 'signup') {
+            return response()->json([
                 'usuario' => [
                     'id' => $asociado->id,
                     'nombre' => $asociado->nombre,
                     'email' => $asociado->email,
                 ],
+                'status' => 'NEEDS_SIGNUP_FORM',
+                'organizaciones' => $organizationsPayload,
+                'message' => 'Tu cuenta ya existe y ya sos admin de una organización. Podés crear una nueva organización si querés.',
+                'organizacion_seleccionada_id' => null,
+                'asociado_existente' => true,
             ]);
         }
 
