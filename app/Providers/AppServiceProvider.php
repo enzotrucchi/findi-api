@@ -2,27 +2,31 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Mail\Events\MessageSending;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
         //
     }
-
-    /**
-     * Bootstrap any application services.
-     */
+    
     public function boot(): void
     {
-        // Send hidden copy to admin on every outbound mail when configured
-        if (config('mail.admin_address')) {
-            Mail::alwaysBcc(config('mail.admin_address'));
+        $admin = config('mail.admin_address');
+
+        if (!is_string($admin) || $admin === '') {
+            return;
         }
+
+        Event::listen(MessageSending::class, function (MessageSending $event) use ($admin) {
+            $message = $event->message;
+
+            if (method_exists($message, 'addBcc')) {
+                $message->addBcc($admin);
+            }
+        });
     }
 }
