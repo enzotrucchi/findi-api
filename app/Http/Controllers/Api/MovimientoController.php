@@ -64,6 +64,24 @@ class MovimientoController extends Controller
         }
     }
 
+    public function cargaMasiva(MovimientoRequest $request): JsonResponse
+    {
+        try {
+            $dtos = [];
+            foreach ($request->validated()['movimientos'] as $movimientoData) {
+                $dtos[] = MovimientoDTO::desdeArray($movimientoData);
+            }
+
+            $movimientos = $this->movimientoService->cargaMasiva($dtos);
+
+            return ApiResponse::creado($movimientos, 'Movimientos creados exitosamente');
+        } catch (InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 400);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al crear movimientos: ' . $e->getMessage(), 500);
+        }
+    }
+
     /**
      * Actualizar un movimiento existente.
      */

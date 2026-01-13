@@ -187,7 +187,7 @@ class MovimientoService
                     Log::error('Error al generar PDF de comprobante: ' . $e->getMessage());
                 }
 
-                Mail::to($movimiento->asociado->email)->send(
+                Mail::to($movimiento->asociado->email)->queue(
                     new ComprobanteMovimiento($movimiento, $organizacionNombre, $pdfContent)
                 );
             } catch (\Exception $e) {
@@ -198,6 +198,25 @@ class MovimientoService
 
         return $movimiento;
     }
+
+    /**
+     * Carga masiva de movimientos desde un array de DTOs.
+     */
+    public function cargaMasiva(array $dtos): array
+    {
+        return DB::transaction(function () use ($dtos) {
+            $movimientosCreados = [];
+
+            foreach ($dtos as $dto) {
+                $movimientosCreados[] = $this->crear($dto);
+            }
+
+            return $movimientosCreados;
+        });
+    }
+
+
+
 
     /**
      * Actualizar un movimiento existente.

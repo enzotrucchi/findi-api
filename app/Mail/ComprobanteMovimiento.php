@@ -21,7 +21,9 @@ class ComprobanteMovimiento extends Mailable
         public Movimiento $movimiento,
         public string $organizacionNombre,
         public ?string $pdfContent = null
-    ) {}
+    ) {
+        $this->afterCommit(); // clave: se encola recién cuando la tx committeó
+    }
 
     /**
      * Get the message envelope.

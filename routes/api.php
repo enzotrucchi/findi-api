@@ -120,6 +120,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('movimientos/{id}/comprobante', [MovimientoController::class, 'descargarComprobante']);
     Route::get('movimientos', [MovimientoController::class, 'obtenerColeccion']);
     Route::post('movimientos', [MovimientoController::class, 'crear']);
+    Route::post('movimientos/carga-masiva', [MovimientoController::class, 'cargaMasiva']);
     Route::put('movimientos/{id}', [MovimientoController::class, 'actualizar']);
     Route::delete('movimientos/{id}', [MovimientoController::class, 'eliminar']);
 
