@@ -10,6 +10,7 @@ use App\Http\Responses\ApiResponse;
 use App\Services\MovimientoService;
 use Illuminate\Http\JsonResponse;
 use InvalidArgumentException;
+use App\Http\Requests\Movimiento\MovimientoMasivoRequest;
 
 class MovimientoController extends Controller
 {
@@ -64,7 +65,7 @@ class MovimientoController extends Controller
         }
     }
 
-    public function cargaMasiva(MovimientoRequest $request): JsonResponse
+    public function cargaMasiva(MovimientoMasivoRequest $request): JsonResponse
     {
         try {
             $dtos = [];
