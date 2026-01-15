@@ -179,22 +179,14 @@ class MovimientoService
             try {
                 $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
 
-                // Generar PDF en memoria
-                $pdfContent = null;
-                try {
-                    $pdfContent = $this->generarPdfComprobante($movimiento);
-                } catch (\Exception $e) {
-                    Log::error('Error al generar PDF de comprobante: ' . $e->getMessage());
-                }
-
                 Mail::to($movimiento->asociado->email)->queue(
-                    new ComprobanteMovimiento($movimiento, $organizacionNombre, $pdfContent)
+                    new ComprobanteMovimiento($movimiento->id, $organizacionNombre)
                 );
             } catch (\Exception $e) {
-                // Log del error pero no falla la creación del movimiento
                 Log::error('Error al enviar email de comprobante: ' . $e->getMessage());
             }
         }
+
 
         return $movimiento;
     }

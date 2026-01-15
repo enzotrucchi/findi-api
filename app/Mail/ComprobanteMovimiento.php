@@ -3,67 +3,42 @@
 namespace App\Mail;
 
 use App\Models\Movimiento;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ComprobanteMovimiento extends Mailable
+class ComprobanteMovimiento extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(
-        public Movimiento $movimiento,
-        public string $organizacionNombre,
-        public ?string $pdfContent = null
+        public int $movimientoId,
+        public string $organizacionNombre
     ) {
-        $this->afterCommit(); // clave: se encola recién cuando la tx committeó
+        $this->afterCommit();
     }
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
+    public function build()
     {
-        $tipo = ucfirst($this->movimiento->tipo);
-        return new Envelope(
-            subject: "Comprobante de {$tipo} - Findi",
-        );
-    }
+        $movimiento = Movimiento::with(['asociado', 'modoPago', 'proyecto', 'proveedor', 'organizacion'])
+            ->findOrFail($this->movimientoId);
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            view: 'emails.comprobante-movimiento',
-        );
-    }
+        $organizacionNombre = $movimiento->organizacion->nombre ?? $this->organizacionNombre ?? 'Findi';
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        $attachments = [];
+        $pdf = Pdf::loadView('pdf.comprobante-movimiento', [
+            'movimiento' => $movimiento,
+            'organizacionNombre' => $organizacionNombre,
+        ]);
 
-        if ($this->pdfContent) {
-            $fecha = \Carbon\Carbon::parse($this->movimiento->fecha)->format('Y-m-d');
-            $tipo = $this->movimiento->tipo;
-            $nombreArchivo = "comprobante_{$tipo}_{$fecha}.pdf";
-
-            $attachments[] = Attachment::fromData(fn() => $this->pdfContent, $nombreArchivo)
-                ->withMime('application/pdf');
-        }
-
-        return $attachments;
+        return $this->subject("Comprobante de movimiento #{$movimiento->id}")
+            ->view('emails.comprobante-movimiento', [
+                'movimiento' => $movimiento,
+                'organizacionNombre' => $organizacionNombre,
+            ])
+            ->attachData($pdf->output(), "comprobante_{$movimiento->id}.pdf", [
+                'mime' => 'application/pdf',
+            ]);
     }
 }
