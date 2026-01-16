@@ -103,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('asociados/estadisticas', [AsociadoController::class, 'obtenerEstadisticas']);
     Route::get('asociados', [AsociadoController::class, 'obtenerColeccion']);
+    Route::get('asociados/{id}', [AsociadoController::class, 'obtener']);
     Route::post('asociados', [AsociadoController::class, 'crear']);
     Route::get('asociados/{id}/movimientos', [AsociadoController::class, 'obtenerMovimientos']);
     Route::put('asociados/{id}', [AsociadoController::class, 'actualizar']);

@@ -60,6 +60,19 @@ class AsociadoService
     }
 
     /**
+     * Obtener un asociado por su ID dentro de la organización seleccionada.
+     *
+     * @param int $id
+     * @return Asociado|null
+     */
+    public function obtenerPorId(int $id): ?Asociado
+    {
+        return $this->queryPorOrganizacionSeleccionada()
+            ->where('asociados.id', $id)
+            ->first();
+    }
+
+    /**
      * Obtener todos los asociados.
      * Utiliza Laravel Pagination internamente.
      * 
@@ -73,6 +86,15 @@ class AsociadoService
         $query = $this->queryPorOrganizacionSeleccionada();
 
         $perPage  = 10;
+
+        if ($filtroDTO->getSearch()) {
+            $searchTerm = '%' . str_replace(' ', '%', $filtroDTO->getSearch()) . '%';
+            $query->where(function (Builder $q) use ($searchTerm) {
+                $q->where('nombre', 'like', $searchTerm)
+                    ->orWhere('email', 'like', $searchTerm);
+            });
+        }
+
 
         return $query
             ->orderBy('nombre', 'asc')

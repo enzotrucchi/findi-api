@@ -7,6 +7,7 @@ class FiltroMovimientoDTO
     private int $pagina = 1;
     private ?string $fecha_desde = null;
     private ?string $fecha_hasta = null;
+    private ?string $tipo = null;
 
     public function __construct() {}
 
@@ -38,5 +39,15 @@ class FiltroMovimientoDTO
     public function setFechaHasta(?string $fechaHasta): void
     {
         $this->fecha_hasta = $fechaHasta;
+    }
+
+    public function getTipo(): ?string
+    {
+        return $this->tipo;
+    }
+
+    public function setTipo(?string $tipo): void
+    {
+        $this->tipo = $tipo;
     }
 }

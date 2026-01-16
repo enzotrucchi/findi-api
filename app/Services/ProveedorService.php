@@ -38,7 +38,10 @@ class ProveedorService
     {
         $query = Proveedor::query();
 
-        $perPage  = 10;
+        $query->where('organizacion_id', $this->obtenerOrganizacionId());
+
+        $total = (clone $query)->count();
+        $perPage = $total > 0 ? $total : 1;
 
         return $query
             ->orderBy('nombre', 'asc')

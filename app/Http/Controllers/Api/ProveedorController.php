@@ -40,7 +40,7 @@ class ProveedorController extends Controller
     {
         try {
             $filtroDTO = new FiltroProveedorDTO();
-            $filtroDTO->setPagina(request()->input('pagina', 1));
+            // $filtroDTO->setPagina(request()->input('pagina', 1));
 
             $proveedores = $this->proveedorService->obtenerColeccion($filtroDTO);
 

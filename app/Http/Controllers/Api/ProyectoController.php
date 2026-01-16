@@ -21,7 +21,7 @@ class ProyectoController extends Controller
     {
         try {
             $filtroDTO = new FiltroProyectoDTO();
-            $filtroDTO->setPagina(request()->input('pagina', 1));
+            // $filtroDTO->setPagina(request()->input('pagina', 1));
 
             $proyectos = $this->proyectoService->obtenerColeccion($filtroDTO);
 

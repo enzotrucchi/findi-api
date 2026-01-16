@@ -65,15 +65,33 @@ class MovimientoService
         $this->aplicarFiltros($kpiFiltradosQuery, $filtroDTO);
         $kpisFiltrados = $this->calcularKpis($kpiFiltradosQuery);
 
-        // ===== TABLA (con filtros + relaciones + paginación) =====
+        // ===== TABLA (con filtros + relaciones + paginación o completa) =====
         $tableQuery = clone $baseQuery;
         $tableQuery->with(['asociado', 'modoPago', 'proyecto', 'proveedor']);
         $this->aplicarFiltros($tableQuery, $filtroDTO);
 
-        $paginacion = $tableQuery
-            ->orderBy('fecha', 'desc')
-            ->orderBy('hora', 'desc')
-            ->paginate(perPage: 10, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+        // Si el tipo es 'completa', devolver todos los registros sin paginar
+        if ($filtroDTO->getTipo() === 'completa') {
+            $datos = $tableQuery
+                ->orderBy('fecha', 'desc')
+                ->orderBy('hora', 'desc')
+                ->get();
+
+            $paginacion = [
+                'data' => $datos,
+                'total' => $datos->count(),
+                'per_page' => $datos->count(),
+                'current_page' => 1,
+                'last_page' => 1,
+                'from' => 1,
+                'to' => $datos->count(),
+            ];
+        } else {
+            $paginacion = $tableQuery
+                ->orderBy('fecha', 'desc')
+                ->orderBy('hora', 'desc')
+                ->paginate(perPage: 10, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+        }
 
         return [
             'kpis' => [
@@ -161,7 +179,7 @@ class MovimientoService
             'detalle' => $dto->detalle ? trim($dto->detalle) : null,
             'monto' => $dto->monto,
             'tipo' => $dto->tipo,
-            'status' => $dto->status ?? 'pendiente',
+            'status' => $dto->status ?? 'aprobado',
             'adjunto' => $dto->adjunto,
             'proyecto_id' => $dto->proyectoId,
             'asociado_id' => $dto->asociadoId,

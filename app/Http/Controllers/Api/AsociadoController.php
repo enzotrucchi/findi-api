@@ -20,6 +20,21 @@ class AsociadoController extends Controller
 {
     public function __construct(private AsociadoService $asociadoService) {}
 
+    public function obtener(int $id): JsonResponse
+    {
+        try {
+            $asociado = $this->asociadoService->obtenerPorId($id);
+
+            if (!$asociado) {
+                return ApiResponse::noEncontrado('Asociado no encontrado');
+            }
+
+            return ApiResponse::exito($asociado, 'Asociado obtenido exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener asociado: ' . $e->getMessage(), 500);
+        }
+    }
+
     /**
      * Obtener colección de asociados (paginada) de la organización seleccionada.
      *
@@ -30,6 +45,7 @@ class AsociadoController extends Controller
         try {
             $filtroDTO = new FiltroAsociadoDTO();
             $filtroDTO->setPagina(request()->input('pagina', 1));
+            $filtroDTO->setSearch(request()->input('search', null));
 
             $asociados = $this->asociadoService->obtenerColeccion($filtroDTO);
 

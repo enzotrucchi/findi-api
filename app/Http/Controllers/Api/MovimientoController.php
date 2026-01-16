@@ -26,6 +26,7 @@ class MovimientoController extends Controller
             $filtroDTO->setPagina(request()->query('pagina', 1));
             $filtroDTO->setFechaDesde(request()->query('fecha_desde'));
             $filtroDTO->setFechaHasta(request()->query('fecha_hasta'));
+            $filtroDTO->setTipo(request()->query('tipo'));
 
             $movimientos = $this->movimientoService->obtenerColeccion($filtroDTO);
 

@@ -30,7 +30,8 @@ class ProyectoService
     {
         $query = Proyecto::query();
 
-        $perPage  = 10;
+        $total = (clone $query)->count();
+        $perPage = $total > 0 ? $total : 1;
 
         return $query
             ->orderBy('fecha_alta', 'asc')
