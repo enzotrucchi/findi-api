@@ -328,7 +328,10 @@ class AuthController extends Controller
                 'fecha_alta'       => $org->fecha_alta,
                 'es_prueba'        => (bool) $org->es_prueba,
                 'fecha_fin_prueba' => $org->fecha_fin_prueba,
-                'es_admin' => $adminAsociado && $asociadoId && $adminAsociado->id === $asociadoId,
+
+                // ✅ la verdad viene del pivot del usuario actual
+                'es_admin'         => (bool) $org->pivot->es_admin,
+
                 'activo'           => (bool) $org->pivot->activo,
                 'habilitada'       => (bool) ($org->habilitada ?? true),
                 'usuario_admin'    => $adminAsociado ? [
