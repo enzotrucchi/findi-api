@@ -115,7 +115,7 @@ class AuthController extends Controller
 
         $activasCount = $organizacionesActivas->count();
 
-        $organizationsPayload = $this->mapOrganizacionesPayload($organizacionesActivas);
+        $organizationsPayload = $this->mapOrganizacionesPayload($organizacionesActivas, $asociado->id);
 
         /**
          * Caso 2.1: >1 org activa -> elegir organización
@@ -229,13 +229,25 @@ class AuthController extends Controller
                 ]);
             }
 
-            // LOGIN: asociado sin permisos de admin, acceso no habilitado
+            // ✅ LOGIN normal: permitir acceso
+            auth()->login($asociado);
+
+            // set org seleccionada si hace falta
+            if (! $asociado->organizacion_seleccionada_id || (int) $asociado->organizacion_seleccionada_id !== (int) $org->id) {
+                $asociado->organizacion_seleccionada_id = $org->id;
+                $asociado->save();
+            }
+
             return response()->json([
-                'usuario' => null,
-                'status' => 'ASSOCIATE_ONLY',
+                'usuario' => [
+                    'id' => $asociado->id,
+                    'nombre' => $asociado->nombre,
+                    'email' => $asociado->email,
+                ],
+                'status' => 'DIRECT_LOGIN', // o 'DIRECT_LOGIN_ASSOCIADO' si querés distinguir
                 'organizaciones' => $organizationsPayload,
-                'message' => 'El acceso para asociados todavía no está habilitado. Contacta al administrador de tu organización.',
-                'organizacion_seleccionada_id' => null,
+                'message' => null,
+                'organizacion_seleccionada_id' => (int) $asociado->organizacion_seleccionada_id,
                 'asociado_existente' => true,
             ]);
         }
@@ -303,10 +315,9 @@ class AuthController extends Controller
         return $data;
     }
 
-    private function mapOrganizacionesPayload($organizacionesActivas): array
+    private function mapOrganizacionesPayload($organizacionesActivas, ?int $asociadoId = null): array
     {
-        return $organizacionesActivas->map(function ($org) {
-            // Obtener el asociado admin de la organización
+        return $organizacionesActivas->map(function ($org) use ($asociadoId) {
             $adminAsociado = $org->asociados()
                 ->wherePivot('es_admin', true)
                 ->first();
@@ -317,7 +328,7 @@ class AuthController extends Controller
                 'fecha_alta'       => $org->fecha_alta,
                 'es_prueba'        => (bool) $org->es_prueba,
                 'fecha_fin_prueba' => $org->fecha_fin_prueba,
-                'es_admin'         => (bool) $adminAsociado && $adminAsociado->id === auth()->id(),
+                'es_admin' => $adminAsociado && $asociadoId && $adminAsociado->id === $asociadoId,
                 'activo'           => (bool) $org->pivot->activo,
                 'habilitada'       => (bool) ($org->habilitada ?? true),
                 'usuario_admin'    => $adminAsociado ? [
