@@ -37,13 +37,13 @@
             </table>
         </div>
 
-        <div style="background-color: #DBEAFE; border-left: 4px solid #3B82F6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <!-- <div style="background-color: #DBEAFE; border-left: 4px solid #3B82F6; padding: 15px; margin: 20px 0; border-radius: 4px;">
             <p style="margin: 0; color: #1E3A8A;"><strong>Datos para transferencia</strong></p>
             <p style="margin: 10px 0 0; color: #1E3A8A;">
                 <strong>ALIAS:</strong> FINDI.APP<br>
                 <strong>CBU:</strong> 0170275240000003423998
             </p>
-        </div>
+        </div> -->
 
         <p>Si tenés alguna consulta, escribinos a <a href="mailto:hola@findiapp.com" style="color: #3B82F6; text-decoration: none;">hola@findiapp.com</a>.</p>
 
