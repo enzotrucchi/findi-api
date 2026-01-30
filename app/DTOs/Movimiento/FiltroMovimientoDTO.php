@@ -8,6 +8,7 @@ class FiltroMovimientoDTO
     private ?string $fecha_desde = null;
     private ?string $fecha_hasta = null;
     private ?string $tipo = null;
+    private ?int $lista_id = null;
 
     public function __construct() {}
 
@@ -49,5 +50,15 @@ class FiltroMovimientoDTO
     public function setTipo(?string $tipo): void
     {
         $this->tipo = $tipo;
+    }
+
+    public function getListaId(): ?int
+    {
+        return $this->lista_id;
+    }
+
+    public function setListaId(?int $listaId): void
+    {
+        $this->lista_id = $listaId;
     }
 }

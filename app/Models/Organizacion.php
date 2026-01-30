@@ -65,6 +65,11 @@ class Organizacion extends Model
             ->withTimestamps();
     }
 
+    public function proyectos(): HasMany
+    {
+        return $this->hasMany(Proyecto::class);
+    }
+
     /**
      * Obtener las facturas de la organización.
      *

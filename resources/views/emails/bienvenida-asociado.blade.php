@@ -18,6 +18,8 @@
 
         <p>Ahora formás parte de <strong>{{ $organizacionNombre }}</strong></p>
 
+        <p>Te agregó <strong>{{ $adminNombre }}</strong>@if($adminEmail) ({{ $adminEmail }})@endif</p>
+
         <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
 
         <p>Ingresa a <a href="https://findiapp.com" target="_blank" style="color: #7C3AED; text-decoration: none;">Findi</a> Y empezá a gestionar tus movimientos.</p>

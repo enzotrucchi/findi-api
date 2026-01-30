@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\DTOs\Organizacion\FiltroOrganizacionDTO;
 use App\DTOs\Organizacion\OrganizacionDTO;
 use App\Models\Organizacion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
@@ -19,19 +21,13 @@ class OrganizacionService
     /**
      * Obtener todas las organizaciones.
      *
-     * @param bool $soloPrueba
-     * @param bool $soloProduccion
+     * @param FiltroOrganizacionDTO $filtroDTO
      * @return Collection
      */
-    public function obtenerColeccion(bool $soloPrueba = false, bool $soloProduccion = false): Collection
+    public function obtenerColeccion(FiltroOrganizacionDTO $filtroDTO): Collection
     {
-        $query = Organizacion::query();
-
-        if ($soloPrueba) {
-            $query->where('es_prueba', true);
-        } elseif ($soloProduccion) {
-            $query->where('es_prueba', false);
-        }
+        $query = $this->queryBase();
+        $this->aplicarFiltros($query, $filtroDTO);
 
         return $query->orderBy('nombre', 'asc')->get();
     }
@@ -66,12 +62,7 @@ class OrganizacionService
             throw new InvalidArgumentException('Las organizaciones de prueba deben tener una fecha de fin de prueba.');
         }
 
-        return Organizacion::create([
-            'nombre' => $this->normalizarNombre($dto->nombre),
-            'fecha_alta' => $dto->fechaAlta ?? now()->format('Y-m-d'),
-            'es_prueba' => $dto->esPrueba ?? false,
-            'fecha_fin_prueba' => $dto->fechaFinPrueba,
-        ]);
+        return Organizacion::create($this->prepararDatos($dto));
     }
 
     /**
@@ -96,12 +87,7 @@ class OrganizacionService
         //     throw new InvalidArgumentException('El nombre de organización ya está registrado.');
         // }
 
-        $organizacion->update([
-            'nombre' => $nombreNormalizado,
-            'fecha_alta' => $dto->fechaAlta ?? $organizacion->fecha_alta,
-            'es_prueba' => $dto->esPrueba ?? $organizacion->es_prueba,
-            'fecha_fin_prueba' => $dto->fechaFinPrueba ?? $organizacion->fecha_fin_prueba,
-        ]);
+        $organizacion->update($this->prepararDatos($dto, $organizacion));
 
         return $organizacion->fresh();
     }
@@ -131,9 +117,10 @@ class OrganizacionService
      */
     public function buscar(string $termino): Collection
     {
-        return Organizacion::where('nombre', 'like', '%' . $termino . '%')
-            ->orderBy('nombre', 'asc')
-            ->get();
+        $query = $this->queryBase();
+        $this->aplicarBusqueda($query, $termino);
+
+        return $query->orderBy('nombre', 'asc')->get();
     }
 
     /**
@@ -144,7 +131,7 @@ class OrganizacionService
      */
     public function obtenerPorIds(array $ids): Collection
     {
-        return Organizacion::whereIn('id', $ids)->get();
+        return $this->queryBase()->whereIn('id', $ids)->get();
     }
 
     /**
@@ -163,9 +150,12 @@ class OrganizacionService
      *
      * @return int
      */
-    public function contar(): int
+    public function contar(FiltroOrganizacionDTO $filtroDTO): int
     {
-        return Organizacion::count();
+        $query = $this->queryBase();
+        $this->aplicarFiltros($query, $filtroDTO);
+
+        return $query->count();
     }
 
     /**
@@ -177,11 +167,48 @@ class OrganizacionService
      */
     public function existeNombre(string $nombre, ?int $excluirId = null): bool
     {
-        $query = Organizacion::where('nombre', $this->normalizarNombre($nombre));
+        $query = $this->queryBase()->where('nombre', $this->normalizarNombre($nombre));
         if ($excluirId !== null) {
             $query->where('id', '!=', $excluirId);
         }
         return $query->exists();
+    }
+
+    private function queryBase(): Builder
+    {
+        return Organizacion::query();
+    }
+
+    private function aplicarFiltros(Builder $query, FiltroOrganizacionDTO $filtroDTO): void
+    {
+        if ($filtroDTO->getSoloPrueba()) {
+            $query->where('es_prueba', true);
+        } elseif ($filtroDTO->getSoloProduccion()) {
+            $query->where('es_prueba', false);
+        }
+
+        if ($filtroDTO->getSoloHabilitadas() !== null) {
+            $query->where('habilitada', $filtroDTO->getSoloHabilitadas());
+        }
+
+        $this->aplicarBusqueda($query, $filtroDTO->getSearch());
+    }
+
+    private function aplicarBusqueda(Builder $query, ?string $termino): void
+    {
+        if ($termino !== null && $termino !== '') {
+            $query->where('nombre', 'like', '%' . $termino . '%');
+        }
+    }
+
+    private function prepararDatos(OrganizacionDTO $dto, ?Organizacion $organizacion = null): array
+    {
+        return [
+            'nombre' => $this->normalizarNombre($dto->nombre),
+            'fecha_alta' => $dto->fechaAlta ?? $organizacion?->fecha_alta ?? now()->format('Y-m-d'),
+            'es_prueba' => $dto->esPrueba ?? $organizacion?->es_prueba ?? false,
+            'fecha_fin_prueba' => $dto->fechaFinPrueba ?? $organizacion?->fecha_fin_prueba,
+        ];
     }
 
     /**

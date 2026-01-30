@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use App\DTOs\Organizacion\OrganizacionDTO;
+use App\DTOs\Organizacion\FiltroOrganizacionDTO;
 
 class OrganizacionController extends Controller
 {
@@ -17,11 +18,15 @@ class OrganizacionController extends Controller
     public function obtenerColeccion(Request $request): JsonResponse
     {
         try {
-            $soloActivos = (bool) $request->query('activos', false);
-            $organizaciones = $this->organizacionService->obtenerColeccion($soloActivos);
-            $datos = $organizaciones->map(fn($dto) => $dto->aArray());
+            $filtroDTO = new FiltroOrganizacionDTO();
+            $filtroDTO->setSoloPrueba($this->normalizarBooleano($request->query('prueba', $request->query('es_prueba'))));
+            $filtroDTO->setSoloProduccion($this->normalizarBooleano($request->query('produccion')));
+            $filtroDTO->setSoloHabilitadas($this->normalizarBooleano($request->query('activos', $request->query('habilitadas'))));
+            $filtroDTO->setSearch($request->query('search', $request->query('q', $request->query('busqueda'))));
 
-            return ApiResponse::exito($datos, 'Organizaciones obtenidas exitosamente');
+            $organizaciones = $this->organizacionService->obtenerColeccion($filtroDTO);
+
+            return ApiResponse::exito($organizaciones, 'Organizaciones obtenidas exitosamente');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener organizaciones: ' . $e->getMessage(), 500);
         }
@@ -36,7 +41,7 @@ class OrganizacionController extends Controller
                 return ApiResponse::noEncontrado('Organización no encontrada');
             }
 
-            return ApiResponse::exito($organizacion->aArray(), 'Organización obtenida exitosamente');
+            return ApiResponse::exito($organizacion, 'Organización obtenida exitosamente');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener organización: ' . $e->getMessage(), 500);
         }
@@ -48,7 +53,7 @@ class OrganizacionController extends Controller
             $dto = OrganizacionDTO::desdeArray($request->all());
             $organizacion = $this->organizacionService->crear($dto);
 
-            return ApiResponse::creado($organizacion->aArray(), 'Organización creada exitosamente');
+            return ApiResponse::creado($organizacion, 'Organización creada exitosamente');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
@@ -59,6 +64,17 @@ class OrganizacionController extends Controller
     public function actualizar(Request $request, int $id): JsonResponse
     {
         try {
+            // Verificar que el usuario autenticado es admin de esta organización
+            $usuario = $request->user();
+            $esAdmin = $usuario->organizaciones()
+                ->where('organizacion_id', $id)
+                ->wherePivot('es_admin', true)
+                ->exists();
+
+            if (!$esAdmin) {
+                return ApiResponse::error('No tienes permisos para actualizar esta organización', 403);
+            }
+
             $dto = OrganizacionDTO::desdeArray($request->all());
             $organizacion = $this->organizacionService->actualizar($id, $dto);
 
@@ -66,7 +82,7 @@ class OrganizacionController extends Controller
                 return ApiResponse::noEncontrado('Organización no encontrada');
             }
 
-            return ApiResponse::exito($organizacion->aArray(), 'Organización actualizada exitosamente');
+            return ApiResponse::exito($organizacion, 'Organización actualizada exitosamente');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
@@ -98,7 +114,7 @@ class OrganizacionController extends Controller
                 return ApiResponse::error('Falta término de búsqueda', 400);
             }
 
-            $resultados = $this->organizacionService->buscar($termino)->map(fn($dto) => $dto->aArray());
+            $resultados = $this->organizacionService->buscar($termino);
             return ApiResponse::exito($resultados, 'Búsqueda completada');
         } catch (\Exception $e) {
             return ApiResponse::error('Error en la búsqueda: ' . $e->getMessage(), 500);
@@ -108,8 +124,13 @@ class OrganizacionController extends Controller
     public function contar(Request $request): JsonResponse
     {
         try {
-            $soloActivos = (bool) $request->query('activos', false);
-            $cantidad = $this->organizacionService->contar($soloActivos);
+            $filtroDTO = new FiltroOrganizacionDTO();
+            $filtroDTO->setSoloPrueba($this->normalizarBooleano($request->query('prueba', $request->query('es_prueba'))));
+            $filtroDTO->setSoloProduccion($this->normalizarBooleano($request->query('produccion')));
+            $filtroDTO->setSoloHabilitadas($this->normalizarBooleano($request->query('activos', $request->query('habilitadas'))));
+            $filtroDTO->setSearch($request->query('search', $request->query('q', $request->query('busqueda'))));
+
+            $cantidad = $this->organizacionService->contar($filtroDTO);
             return ApiResponse::exito(['cantidad' => $cantidad], 'Conteo realizado');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al contar organizaciones: ' . $e->getMessage(), 500);
@@ -120,7 +141,7 @@ class OrganizacionController extends Controller
     {
         try {
             $ids = $request->input('ids', []);
-            $coleccion = $this->organizacionService->obtenerPorIds((array) $ids)->map(fn($dto) => $dto->aArray());
+            $coleccion = $this->organizacionService->obtenerPorIds((array) $ids);
             return ApiResponse::exito($coleccion, 'Organizaciones obtenidas por ids');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener por ids: ' . $e->getMessage(), 500);
@@ -135,5 +156,14 @@ class OrganizacionController extends Controller
         } catch (\Exception $e) {
             return ApiResponse::error('Error al verificar existencia: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function normalizarBooleano(mixed $valor): ?bool
+    {
+        if ($valor === null) {
+            return null;
+        }
+
+        return filter_var($valor, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
     }
 }

@@ -97,8 +97,21 @@ class AsociadoService
 
 
         return $query
+            ->with('listas')
             ->orderBy('nombre', 'asc')
             ->paginate(perPage: $perPage, columns: ['*'], pageName: 'pagina', page: $filtroDTO->getPagina());
+    }
+
+    /**
+     * Obtener todos los asociados sin paginación (para selects/checkboxes).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function obtenerTodos(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->queryPorOrganizacionSeleccionada()
+            ->orderBy('nombre', 'asc')
+            ->get();
     }
 
     /**
@@ -185,11 +198,19 @@ class AsociadoService
             ]);
 
             $organizacionNombre = $asociado->organizaciones()->where('organizacion_id', $orgId)->first()->nombre;
+            $admin = Auth::user();
+            $adminNombre = $admin?->nombre ?? 'Administrador';
+            $adminEmail = $admin?->email;
 
             // Enviar email si tiene email válido
             if ($emailNormalizado) {
                 // Siempre enviamos email, ya sea de bienvenida o de asociación a nueva organización
-                Mail::to($asociado->email)->send(new BienvenidaAsociado($asociado, $organizacionNombre));
+                Mail::to($asociado->email)->send(new BienvenidaAsociado(
+                    $asociado,
+                    $organizacionNombre,
+                    $adminNombre,
+                    $adminEmail
+                ));
             }
 
             return $asociado;

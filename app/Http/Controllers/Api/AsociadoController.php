@@ -15,6 +15,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Asociado\AsociadoRequest;
 use App\DTOs\Asociado\AsociadoDTO;
+use App\Http\Requests\Asociado\UpdateMeRequest;
+
 
 class AsociadoController extends Controller
 {
@@ -49,6 +51,20 @@ class AsociadoController extends Controller
 
             $asociados = $this->asociadoService->obtenerColeccion($filtroDTO);
 
+            return ApiResponse::exito($asociados, 'Asociados obtenidos exitosamente');
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/asociados/todos
+     * Obtener todos los asociados sin paginación (para selects/checkboxes)
+     */
+    public function todos(): JsonResponse
+    {
+        try {
+            $asociados = $this->asociadoService->obtenerTodos();
             return ApiResponse::exito($asociados, 'Asociados obtenidos exitosamente');
         } catch (\Exception $e) {
             return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
@@ -142,5 +158,66 @@ class AsociadoController extends Controller
         } catch (\Exception $e) {
             return ApiResponse::error('Error al desactivar asociado: ' . $e->getMessage(), 500);
         }
+    }
+
+    public function actualizarPerfil(UpdateMeRequest $request): JsonResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $organizacionActualizada = null;
+        $actualizoUsuario = false;
+
+        if ($request->filled('nombre')) {
+            $user->nombre = $request->string('nombre')->trim();
+            $actualizoUsuario = true;
+        }
+
+        if ($request->filled('organizacion_nombre')) {
+            $organizacionId = $user->organizacion_seleccionada_id;
+
+            if (! $organizacionId) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No hay organización seleccionada para actualizar.',
+                ], 400);
+            }
+
+            $esAdmin = $user->organizaciones()
+                ->where('organizacion_id', $organizacionId)
+                ->wherePivot('es_admin', true)
+                ->exists();
+
+            if (! $esAdmin) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No tienes permisos para actualizar esta organización.',
+                ], 403);
+            }
+
+            $organizacion = $user->organizaciones()
+                ->where('organizacion_id', $organizacionId)
+                ->first();
+
+            if (! $organizacion) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Organización no encontrada.',
+                ], 404);
+            }
+
+            $organizacion->nombre = $request->string('organizacion_nombre')->trim();
+            $organizacion->save();
+            $organizacionActualizada = $organizacion;
+        }
+
+        if ($actualizoUsuario) {
+            $user->save();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'usuario' => $user,
+            'organizacion' => $organizacionActualizada,
+        ]);
     }
 }

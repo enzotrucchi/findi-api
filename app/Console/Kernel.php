@@ -29,6 +29,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '01:00');
         // Enviar emails de facturación del día 1 al 5 de cada mes a las 09:00
         $schedule->command('facturacion:enviar-emails')->cron('0 9 1-5 * *');
+
+        // Sistema de resumen mensual
+        // Enviar resumen mensual el día 5 de cada mes a las 10:00
+        $schedule->command('resumen:enviar-mensual')->monthlyOn(5, '10:00');
     }
 
     /**

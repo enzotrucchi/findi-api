@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ProyectoController;
 use App\Http\Controllers\Api\ProyectoComentarioController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CambiarOrganizacionSeleccionadaController;
+use App\Http\Controllers\Api\ListaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Asociado;
@@ -82,7 +83,7 @@ Route::post('organizaciones/seleccionar', [AuthController::class, 'seleccionarOr
 // Grupo principal: requiere autenticación
 Route::middleware('auth:sanctum')->group(function () {
 
-
+    Route::put('mi-perfil', [AsociadoController::class, 'actualizarPerfil']);
     /*
 |--------------------------------------------------------------------------
 | Rutas de Proveedores
@@ -102,6 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 
     Route::get('asociados/estadisticas', [AsociadoController::class, 'obtenerEstadisticas']);
+    Route::get('asociados/todos', [AsociadoController::class, 'todos']);
     Route::get('asociados', [AsociadoController::class, 'obtenerColeccion']);
     Route::get('asociados/{id}', [AsociadoController::class, 'obtener']);
     Route::post('asociados', [AsociadoController::class, 'crear']);
@@ -134,7 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('organizaciones', [OrganizacionController::class, 'obtenerColeccion']);
     Route::post('organizaciones', [OrganizacionController::class, 'crear']);
     Route::get('organizaciones/{id}', [OrganizacionController::class, 'obtener']);
-    // Route::put('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
+    Route::put('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
     Route::delete('organizaciones/{id}', [OrganizacionController::class, 'eliminar']);
 
     /*
@@ -160,4 +162,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('proyectos/{proyectoId}/comentarios/{comentarioId}', [ProyectoComentarioController::class, 'eliminarComentario']);
 
     Route::get('proyectos/{id}/movimientos', [ProyectoController::class, 'obtenerMovimientos']);
+
+    /*
+|--------------------------------------------------------------------------
+| Rutas de Listas
+|--------------------------------------------------------------------------
+*/
+
+    Route::get('listas/todas', [ListaController::class, 'todas']);
+    Route::get('listas', [ListaController::class, 'index']);
+    Route::post('listas', [ListaController::class, 'store']);
+    Route::get('listas/{id}', [ListaController::class, 'show']);
+    Route::put('listas/{id}', [ListaController::class, 'update']);
+    Route::delete('listas/{id}', [ListaController::class, 'destroy']);
+    Route::get('listas/{id}/asociados', [ListaController::class, 'asociados']);
+    Route::post('listas/{id}/asociados', [ListaController::class, 'agregarAsociados']);
+    Route::put('listas/{id}/asociados', [ListaController::class, 'reemplazarAsociados']);
+    Route::delete('listas/{id}/asociados/{asociadoId}', [ListaController::class, 'eliminarAsociado']);
 });

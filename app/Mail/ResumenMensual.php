@@ -2,26 +2,30 @@
 
 namespace App\Mail;
 
-use App\Models\Asociado;
+use App\Models\Organizacion;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class BienvenidaAsociado extends Mailable
+class ResumenMensual extends Mailable
 {
     use Queueable, SerializesModels;
+
+    public Organizacion $organizacion;
+    public array $totalizadores;
+    public string $nombreAsociado;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(
-        public Asociado $asociado,
-        public string $organizacionNombre,
-        public string $adminNombre,
-        public ?string $adminEmail
-    ) {}
+    public function __construct(Organizacion $organizacion, array $totalizadores, string $nombreAsociado)
+    {
+        $this->organizacion = $organizacion;
+        $this->totalizadores = $totalizadores;
+        $this->nombreAsociado = $nombreAsociado;
+    }
 
     /**
      * Get the message envelope.
@@ -29,8 +33,7 @@ class BienvenidaAsociado extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: $this->asociado->email,
-            subject: 'Bienvenido a Findi. ' . $this->adminNombre . ' te agregó a ' . $this->organizacionNombre,
+            subject: "Resumen Mensual - {$this->totalizadores['periodo_visual']}",
         );
     }
 
@@ -40,7 +43,12 @@ class BienvenidaAsociado extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.bienvenida-asociado',
+            view: 'emails.resumen-mensual',
+            with: [
+                'organizacion' => $this->organizacion,
+                'totalizadores' => $this->totalizadores,
+                'nombreAsociado' => $this->nombreAsociado,
+            ],
         );
     }
 

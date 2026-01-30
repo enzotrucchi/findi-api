@@ -111,6 +111,13 @@ class MovimientoService
         if ($filtroDTO->getFechaHasta()) {
             $query->whereDate('fecha', '<=', $filtroDTO->getFechaHasta());
         }
+
+        // Filtrar por lista de asociados
+        if ($filtroDTO->getListaId()) {
+            $query->whereHas('asociado.listas', function (Builder $q) use ($filtroDTO) {
+                $q->where('listas.id', $filtroDTO->getListaId());
+            });
+        }
     }
 
     private function calcularKpis($query): array

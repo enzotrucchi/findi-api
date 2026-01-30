@@ -86,6 +86,17 @@ class Asociado extends Authenticatable
     }
 
     /**
+     * Obtener las listas del asociado.
+     *
+     * @return BelongsToMany
+     */
+    public function listas(): BelongsToMany
+    {
+        return $this->belongsToMany(Lista::class, 'asociado_lista')
+            ->withTimestamps();
+    }
+
+    /**
      * Accessor: $asociado->organizacion_seleccionada_id (ya lo expone Eloquent),
      * pero si quisieras un alias:
      */
