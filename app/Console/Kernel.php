@@ -12,26 +12,34 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        // app/Console/Commands/EnviarRecordatorioPrueba.php
         $schedule->command('organizaciones:recordatorio-prueba')->dailyAt('11:00');
         // Deshabilitar organizaciones cuya prueba ya venció
+        // app/Console/Commands/DeshabilitarPruebasVencidas.php
         $schedule->command('organizaciones:deshabilitar-prueba-vencida')->dailyAt('02:00');
         // Enviar reporte diario de organizaciones próximas a vencer
+        // app/Console/Commands/EnviarReporteOrganizacionesProximas.php
         $schedule->command('organizaciones:reporte-proximas-a-vencer')->dailyAt('11:00');
 
         // Sistema de facturación
         // Generar facturas mensuales el primer día de cada mes a las 00:00
-        $schedule->command('facturas:generar-mensuales')->monthlyOn(1, '00:00');
+        // app/Console/Commands/GenerarFacturasMensuales.php
+        // $schedule->command('facturas:generar-mensuales')->monthlyOn(1, '00:00');
         // Marcar facturas vencidas y bloquear organizaciones diariamente a las 01:00
-        $schedule->command('facturas:marcar-vencidas')->dailyAt('01:00');
+        // app/Console/Commands/MarcarFacturasVencidas.php
+        // $schedule->command('facturas:marcar-vencidas')->dailyAt('01:00');
 
         // Sistema de facturación mensual
         // Generar registros de facturación el día 1 de cada mes a las 00:30
-        $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '01:00');
+        // app/Console/Commands/GenerarFacturacionMensual.php
+        // $schedule->command('facturacion:generar-mensual')->monthlyOn(1, '01:00');
         // Enviar emails de facturación del día 1 al 5 de cada mes a las 09:00
-        $schedule->command('facturacion:enviar-emails')->cron('0 9 1-5 * *');
+        // app/Console/Commands/EnviarEmailsFacturacion.php
+        // $schedule->command('facturacion:enviar-emails')->cron('0 9 1-5 * *');
 
         // Sistema de resumen mensual
         // Enviar resumen mensual el día 5 de cada mes a las 10:00
+        // app/Console/Commands/EnviarResumenMensual.php
         $schedule->command('resumen:enviar-mensual')->monthlyOn(5, '10:00');
     }
 

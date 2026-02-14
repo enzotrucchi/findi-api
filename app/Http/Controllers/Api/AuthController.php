@@ -104,7 +104,11 @@ class AuthController extends Controller
         /**
          * Caso 2: Existe asociado -> varios sub-casos según organizaciones activas, estado, rol, intent, etc.
          */
-        $asociado->nombre    = $nombreGoogle;
+        // Solo actualizar el nombre en el primer login (cuando no tiene google_id vinculado)
+        if (! $asociado->google_id) {
+            $asociado->nombre = $nombreGoogle;
+        }
+
         $asociado->google_id = $payload['sub'] ?? $asociado->google_id;
         $asociado->save();
 
@@ -229,6 +233,25 @@ class AuthController extends Controller
                 ]);
             }
 
+            // ✅ Verificar si es primer login (requiere código de acceso)
+            if (! (bool) $org->pivot->primer_login_completado) {
+                // Hacer login temporal para poder validar el código
+                auth()->login($asociado);
+
+                return response()->json([
+                    'usuario' => [
+                        'id' => $asociado->id,
+                        'nombre' => $asociado->nombre,
+                        'email' => $asociado->email,
+                    ],
+                    'status' => 'NEEDS_ACCESS_CODE',
+                    'organizaciones' => $organizationsPayload,
+                    'message' => null,
+                    'organizacion_seleccionada_id' => (int) $org->id,
+                    'asociado_existente' => true,
+                ]);
+            }
+
             // ✅ LOGIN normal: permitir acceso
             auth()->login($asociado);
 
@@ -341,6 +364,69 @@ class AuthController extends Controller
                 ] : null,
             ];
         })->values()->all();
+    }
+
+    public function validarCodigoAcceso(Request $request): JsonResponse
+    {
+        $request->validate([
+            'codigo_acceso' => 'required|string|size:6',
+        ]);
+
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Usuario no autenticado',
+            ], 401);
+        }
+
+        $organizacionesActivas = $usuario->organizaciones
+            ->filter(fn($org) => (bool) $org->pivot->activo);
+
+        if ($organizacionesActivas->count() !== 1) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'El usuario debe tener exactamente una organización activa',
+            ], 400);
+        }
+
+        $org = $organizacionesActivas->first();
+        $codigoIngresado = strtoupper(trim($request->input('codigo_acceso')));
+
+        if ($codigoIngresado !== $org->codigo_acceso) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Código de acceso incorrecto',
+            ], 403);
+        }
+
+        // Marcar primer login completado
+        $usuario->organizaciones()->updateExistingPivot($org->id, [
+            'primer_login_completado' => true,
+        ]);
+
+        // Establecer organización seleccionada
+        $usuario->organizacion_seleccionada_id = $org->id;
+        $usuario->save();
+
+        // Recargar organizaciones con pivot actualizado
+        $usuario->load('organizaciones');
+        $organizacionesActivas = $usuario->organizaciones
+            ->filter(fn($org) => (bool) $org->pivot->activo);
+
+        return response()->json([
+            'ok' => true,
+            'usuario' => [
+                'id' => $usuario->id,
+                'nombre' => $usuario->nombre,
+                'email' => $usuario->email,
+            ],
+            'status' => 'DIRECT_LOGIN',
+            'organizaciones' => $this->mapOrganizacionesPayload($organizacionesActivas),
+            'message' => null,
+            'organizacion_seleccionada_id' => (int) $usuario->organizacion_seleccionada_id,
+        ]);
     }
 
     public function crearCuenta(Request $request): JsonResponse

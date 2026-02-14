@@ -80,6 +80,9 @@ Route::post('auth/dev-login', function (Request $request) {
 Route::post('organizaciones/seleccionar', [AuthController::class, 'seleccionarOrganizacion'])
     ->middleware('auth:sanctum');
 
+Route::post('auth/validar-codigo-acceso', [AuthController::class, 'validarCodigoAcceso'])
+    ->middleware('auth:sanctum');
+
 // Grupo principal: requiere autenticación
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -135,6 +138,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route::middleware('auth:sanctum')->post('auth/seleccionar-organizacion', [AuthController::class, 'seleccionarOrganizacion']);
     Route::get('organizaciones', [OrganizacionController::class, 'obtenerColeccion']);
     Route::post('organizaciones', [OrganizacionController::class, 'crear']);
+    Route::get('organizaciones/codigo-acceso', [OrganizacionController::class, 'obtenerCodigoAcceso']);
+    Route::put('organizaciones/codigo-acceso', [OrganizacionController::class, 'actualizarCodigoAcceso']);
+    Route::post('organizaciones/codigo-acceso/regenerar', [OrganizacionController::class, 'regenerarCodigoAcceso']);
     Route::get('organizaciones/{id}', [OrganizacionController::class, 'obtener']);
     Route::put('organizaciones/{id}', [OrganizacionController::class, 'actualizar']);
     Route::delete('organizaciones/{id}', [OrganizacionController::class, 'eliminar']);

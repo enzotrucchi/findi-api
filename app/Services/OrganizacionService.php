@@ -62,7 +62,10 @@ class OrganizacionService
             throw new InvalidArgumentException('Las organizaciones de prueba deben tener una fecha de fin de prueba.');
         }
 
-        return Organizacion::create($this->prepararDatos($dto));
+        $datos = $this->prepararDatos($dto);
+        $datos['codigo_acceso'] = $this->generarCodigoAcceso();
+
+        return Organizacion::create($datos);
     }
 
     /**
@@ -220,5 +223,68 @@ class OrganizacionService
     private function normalizarNombre(string $nombre): string
     {
         return ucwords(strtolower(trim($nombre)));
+    }
+
+    /**
+     * Generar código de acceso alfanumérico de 6 caracteres.
+     *
+     * @return string
+     */
+    public function generarCodigoAcceso(): string
+    {
+        $caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $codigo = '';
+        $longitudCaracteres = strlen($caracteres);
+
+        for ($i = 0; $i < 6; $i++) {
+            $codigo .= $caracteres[random_int(0, $longitudCaracteres - 1)];
+        }
+
+        return $codigo;
+    }
+
+    /**
+     * Regenerar código de acceso para una organización.
+     *
+     * @param int $id
+     * @return Organizacion|null
+     */
+    public function regenerarCodigoAcceso(int $id): ?Organizacion
+    {
+        $organizacion = Organizacion::find($id);
+
+        if (!$organizacion) {
+            return null;
+        }
+
+        $organizacion->update(['codigo_acceso' => $this->generarCodigoAcceso()]);
+
+        return $organizacion->fresh();
+    }
+
+    /**
+     * Actualizar código de acceso personalizado para una organización.
+     *
+     * @param int $id
+     * @param string $codigo
+     * @return Organizacion|null
+     */
+    public function actualizarCodigoAcceso(int $id, string $codigo): ?Organizacion
+    {
+        $organizacion = Organizacion::find($id);
+
+        if (!$organizacion) {
+            return null;
+        }
+
+        $codigoNormalizado = strtoupper(trim($codigo));
+
+        if (strlen($codigoNormalizado) !== 6 || !ctype_alnum($codigoNormalizado)) {
+            throw new \InvalidArgumentException('El código debe tener exactamente 6 caracteres alfanuméricos.');
+        }
+
+        $organizacion->update(['codigo_acceso' => $codigoNormalizado]);
+
+        return $organizacion->fresh();
     }
 }

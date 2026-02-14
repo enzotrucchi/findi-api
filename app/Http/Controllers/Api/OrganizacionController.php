@@ -158,6 +158,120 @@ class OrganizacionController extends Controller
         }
     }
 
+    public function obtenerCodigoAcceso(Request $request): JsonResponse
+    {
+        try {
+            $usuario = $request->user();
+            $orgId = $usuario->organizacion_seleccionada_id;
+
+            if (!$orgId) {
+                return ApiResponse::error('No tienes una organización seleccionada', 400);
+            }
+
+            // Verificar que es admin
+            $esAdmin = $usuario->organizaciones()
+                ->where('organizacion_id', $orgId)
+                ->wherePivot('es_admin', true)
+                ->exists();
+
+            if (!$esAdmin) {
+                return ApiResponse::error('No tienes permisos para ver el código de acceso', 403);
+            }
+
+            $organizacion = $this->organizacionService->obtenerPorId($orgId);
+
+            if (!$organizacion) {
+                return ApiResponse::noEncontrado('Organización no encontrada');
+            }
+
+            return ApiResponse::exito(
+                ['codigo_acceso' => $organizacion->codigo_acceso],
+                'Código de acceso obtenido exitosamente'
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al obtener código de acceso: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function regenerarCodigoAcceso(Request $request): JsonResponse
+    {
+        try {
+            $usuario = $request->user();
+            $orgId = $usuario->organizacion_seleccionada_id;
+
+            if (!$orgId) {
+                return ApiResponse::error('No tienes una organización seleccionada', 400);
+            }
+
+            // Verificar que es admin
+            $esAdmin = $usuario->organizaciones()
+                ->where('organizacion_id', $orgId)
+                ->wherePivot('es_admin', true)
+                ->exists();
+
+            if (!$esAdmin) {
+                return ApiResponse::error('No tienes permisos para regenerar el código de acceso', 403);
+            }
+
+            $organizacion = $this->organizacionService->regenerarCodigoAcceso($orgId);
+
+            if (!$organizacion) {
+                return ApiResponse::noEncontrado('Organización no encontrada');
+            }
+
+            return ApiResponse::exito(
+                ['codigo_acceso' => $organizacion->codigo_acceso],
+                'Código de acceso regenerado exitosamente'
+            );
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al regenerar código de acceso: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function actualizarCodigoAcceso(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'codigo_acceso' => 'required|string|size:6',
+            ]);
+
+            $usuario = $request->user();
+            $orgId = $usuario->organizacion_seleccionada_id;
+
+            if (!$orgId) {
+                return ApiResponse::error('No tienes una organización seleccionada', 400);
+            }
+
+            // Verificar que es admin
+            $esAdmin = $usuario->organizaciones()
+                ->where('organizacion_id', $orgId)
+                ->wherePivot('es_admin', true)
+                ->exists();
+
+            if (!$esAdmin) {
+                return ApiResponse::error('No tienes permisos para actualizar el código de acceso', 403);
+            }
+
+            $organizacion = $this->organizacionService->actualizarCodigoAcceso(
+                $orgId,
+                $request->input('codigo_acceso')
+            );
+
+            if (!$organizacion) {
+                return ApiResponse::noEncontrado('Organización no encontrada');
+            }
+
+            return ApiResponse::exito(
+                ['codigo_acceso' => $organizacion->codigo_acceso],
+                'Código de acceso actualizado exitosamente'
+            );
+        } catch (\InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 400);
+        } catch (\Exception $e) {
+            return ApiResponse::error('Error al actualizar código de acceso: ' . $e->getMessage(), 500);
+        }
+    }
+
     private function normalizarBooleano(mixed $valor): ?bool
     {
         if ($valor === null) {

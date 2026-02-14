@@ -25,6 +25,7 @@ class Organizacion extends Model
      */
     protected $fillable = [
         'nombre',
+        'codigo_acceso',
         'fecha_alta',
         'es_prueba',
         'fecha_fin_prueba',
@@ -61,7 +62,7 @@ class Organizacion extends Model
     public function asociados(): BelongsToMany
     {
         return $this->belongsToMany(Asociado::class, 'asociado_organizacion')
-            ->withPivot('fecha_alta', 'fecha_baja', 'activo')
+            ->withPivot('fecha_alta', 'fecha_baja', 'activo', 'es_admin', 'primer_login_completado')
             ->withTimestamps();
     }
 
