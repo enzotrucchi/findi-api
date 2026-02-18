@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\Movimiento\MovimientoDTO;
 use App\DTOs\Movimiento\FiltroMovimientoDTO;
 use App\Mail\ComprobanteMovimiento;
+use App\Mail\MovimientoEliminado;
 use App\Services\Traits\ObtenerOrganizacionSeleccionada;
 use App\Models\Movimiento;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -110,6 +111,11 @@ class MovimientoService
 
         if ($filtroDTO->getFechaHasta()) {
             $query->whereDate('fecha', '<=', $filtroDTO->getFechaHasta());
+        }
+
+        // Filtrar por tipo de movimiento
+        if ($filtroDTO->getTipo()) {
+            $query->where('tipo', $filtroDTO->getTipo());
         }
 
         // Filtrar por lista de asociados
@@ -269,7 +275,20 @@ class MovimientoService
 
         $movimiento->fresh();
 
-        $movimiento->load(['asociado', 'modoPago', 'proyecto', 'proveedor']);
+        $movimiento->load(['asociado', 'modoPago', 'proyecto', 'proveedor', 'organizacion']);
+
+        // Reenviar comprobante si es un ingreso relacionado a un asociado con email (trazabilidad)
+        if ($movimiento->tipo === 'ingreso' && $movimiento->asociado && $movimiento->asociado->email) {
+            try {
+                $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+
+                Mail::to($movimiento->asociado->email)->queue(
+                    new ComprobanteMovimiento($movimiento->id, $organizacionNombre)
+                );
+            } catch (\Exception $e) {
+                Log::error('Error al enviar email de comprobante (actualización): ' . $e->getMessage());
+            }
+        }
 
         return $movimiento;
     }
@@ -284,13 +303,43 @@ class MovimientoService
     {
         $query = Movimiento::query();
 
-        $movimiento = $query->find($id);
+        $movimiento = $query->with(['asociado', 'organizacion'])->find($id);
 
         if (!$movimiento) {
             return false;
         }
 
-        return $movimiento->delete();
+        // Guardar datos antes de eliminar para notificar al asociado
+        $asociadoEmail = $movimiento->asociado?->email;
+        $esIngreso = $movimiento->tipo === 'ingreso';
+        $movimientoData = null;
+
+        if ($esIngreso && $asociadoEmail) {
+            $movimientoData = [
+                'fecha' => \Carbon\Carbon::parse($movimiento->fecha)->format('d/m/Y'),
+                'hora' => $movimiento->hora,
+                'monto' => $movimiento->monto,
+                'tipo' => $movimiento->tipo,
+                'detalle' => $movimiento->detalle,
+                'asociado_nombre' => $movimiento->asociado->nombre,
+            ];
+            $organizacionNombre = $movimiento->organizacion->nombre ?? 'Findi';
+        }
+
+        $eliminado = $movimiento->delete();
+
+        // Enviar notificación de eliminación al asociado si corresponde
+        if ($eliminado && $esIngreso && $asociadoEmail && $movimientoData) {
+            try {
+                Mail::to($asociadoEmail)->queue(
+                    new MovimientoEliminado($movimientoData, $organizacionNombre)
+                );
+            } catch (\Exception $e) {
+                Log::error('Error al enviar email de movimiento eliminado: ' . $e->getMessage());
+            }
+        }
+
+        return $eliminado;
     }
 
     /**

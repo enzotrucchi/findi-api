@@ -45,7 +45,8 @@ class ProyectoController extends Controller
     public function obtenerMovimientos(int $id): JsonResponse
     {
         try {
-            $movimientos = $this->proyectoService->obtenerMovimientosPorProyecto($id);
+            $tipo = request()->query('tipo');
+            $movimientos = $this->proyectoService->obtenerMovimientosPorProyecto($id, $tipo);
 
             return ApiResponse::exito($movimientos, 'Movimientos del proyecto obtenidos exitosamente');
         } catch (\Exception $e) {

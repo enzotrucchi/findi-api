@@ -72,7 +72,7 @@ class Asociado extends Authenticatable
     public function organizaciones(): BelongsToMany
     {
         return $this->belongsToMany(Organizacion::class, 'asociado_organizacion')
-            ->withPivot('fecha_alta', 'fecha_baja', 'activo', 'es_admin')
+            ->withPivot('fecha_alta', 'fecha_baja', 'activo', 'es_admin', 'primer_login_completado')
             ->withTimestamps();
     }
 

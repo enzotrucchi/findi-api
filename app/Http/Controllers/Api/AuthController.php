@@ -52,6 +52,31 @@ class AuthController extends Controller
             ], 403);
         }
 
+        // Obtener el pivot para verificar si es admin y primer_login_completado
+        $pivot = $user->organizaciones()
+            ->where('organizacion_id', $orgId)
+            ->first()
+            ->pivot;
+
+        // Si no es admin y no ha completado el primer login, requiere código de acceso
+        if (! (bool) $pivot->es_admin && ! (bool) $pivot->primer_login_completado) {
+            // Establecer la organización seleccionada temporalmente para el flujo de validación
+            $user->organizacion_seleccionada_id = $orgId;
+            $user->save();
+
+            $user->load('organizaciones');
+            $organizacionesActivas = $user->organizaciones
+                ->filter(fn($o) => (bool) $o->pivot->activo);
+
+            return response()->json([
+                'ok' => true,
+                'status' => 'NEEDS_ACCESS_CODE',
+                'organizacion_seleccionada_id' => $orgId,
+                'organizaciones' => $this->mapOrganizacionesPayload($organizacionesActivas, $user->id),
+                'message' => null,
+            ]);
+        }
+
         $user->organizacion_seleccionada_id = $orgId;
         $user->save();
 
@@ -370,6 +395,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'codigo_acceso' => 'required|string|size:6',
+            'organizacion_id' => 'nullable|integer',
         ]);
 
         $usuario = $request->user();
@@ -384,14 +410,28 @@ class AuthController extends Controller
         $organizacionesActivas = $usuario->organizaciones
             ->filter(fn($org) => (bool) $org->pivot->activo);
 
-        if ($organizacionesActivas->count() !== 1) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'El usuario debe tener exactamente una organización activa',
-            ], 400);
-        }
+        // Si viene organizacion_id, usar esa organización específica
+        $orgId = $request->input('organizacion_id');
 
-        $org = $organizacionesActivas->first();
+        if ($orgId) {
+            $org = $organizacionesActivas->firstWhere('id', $orgId);
+
+            if (!$org) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'No perteneces a esa organización activa',
+                ], 403);
+            }
+        } else {
+            // Comportamiento original: requiere exactamente 1 organización activa
+            if ($organizacionesActivas->count() !== 1) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'El usuario debe tener exactamente una organización activa o especificar organizacion_id',
+                ], 400);
+            }
+            $org = $organizacionesActivas->first();
+        }
         $codigoIngresado = strtoupper(trim($request->input('codigo_acceso')));
 
         if ($codigoIngresado !== $org->codigo_acceso) {
@@ -464,6 +504,7 @@ class AuthController extends Controller
                     'fecha_baja' => null,
                     'activo'     => true,
                     'es_admin'   => true,
+                    'primer_login_completado' => true, // Admin no necesita validar código de acceso
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

@@ -57,7 +57,7 @@ class ProyectoService
         ];
     }
 
-    public function obtenerMovimientosPorProyecto(int $id): Collection
+    public function obtenerMovimientosPorProyecto(int $id, ?string $tipo = null): Collection
     {
         $proyecto = Proyecto::find($id);
 
@@ -65,7 +65,13 @@ class ProyectoService
             throw new InvalidArgumentException('Proyecto no encontrado.');
         }
 
-        return $proyecto->movimientos()->get();
+        $query = $proyecto->movimientos();
+
+        if ($tipo) {
+            $query->where('tipo', $tipo);
+        }
+
+        return $query->get();
     }
 
 

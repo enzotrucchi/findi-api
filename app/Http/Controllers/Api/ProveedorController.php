@@ -59,7 +59,8 @@ class ProveedorController extends Controller
     public function obtenerMovimientos(int $id): JsonResponse
     {
         try {
-            $movimientos = $this->proveedorService->obtenerMovimientos($id);
+            $tipo = request()->query('tipo');
+            $movimientos = $this->proveedorService->obtenerMovimientos($id, $tipo);
 
             if ($movimientos === null) {
                 return ApiResponse::noEncontrado('Proveedor no encontrado');

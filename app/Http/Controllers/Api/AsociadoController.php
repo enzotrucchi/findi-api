@@ -84,7 +84,8 @@ class AsociadoController extends Controller
     public function obtenerMovimientos(int $id): JsonResponse
     {
         try {
-            $movimientos = $this->asociadoService->obtenerMovimientos($id);
+            $tipo = request()->query('tipo');
+            $movimientos = $this->asociadoService->obtenerMovimientos($id, $tipo);
 
             if ($movimientos === null) {
                 return ApiResponse::noEncontrado('Asociado no encontrado');

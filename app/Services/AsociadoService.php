@@ -139,9 +139,10 @@ class AsociadoService
      * Obtener movimientos de un asociado por su ID.
      *
      * @param int $id
+     * @param string|null $tipo Filtro por tipo: 'ingreso', 'egreso', 'inicial' o null para sin filtro
      * @return Collection<int, mixed>|null
      */
-    public function obtenerMovimientos(int $id): ?Collection
+    public function obtenerMovimientos(int $id, ?string $tipo = null): ?Collection
     {
         // Verificar que el asociado pertenezca a la organización seleccionada
         $asociado = $this->queryPorOrganizacionSeleccionada()
@@ -152,7 +153,13 @@ class AsociadoService
             return null;
         }
 
-        return $asociado->movimientos()->with('modoPago')->orderBy('fecha', 'desc')->get();
+        $query = $asociado->movimientos()->with('modoPago');
+
+        if ($tipo) {
+            $query->where('tipo', $tipo);
+        }
+
+        return $query->orderBy('fecha', 'desc')->get();
     }
 
     /**
