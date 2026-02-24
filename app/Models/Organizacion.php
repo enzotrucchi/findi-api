@@ -55,6 +55,16 @@ class Organizacion extends Model
     }
 
     /**
+     * Obtener los planes de pago de la organización.
+     *
+     * @return HasMany
+     */
+    public function planesPago(): HasMany
+    {
+        return $this->hasMany(PlanPago::class);
+    }
+
+    /**
      * Obtener los asociados de la organización.
      *
      * @return BelongsToMany

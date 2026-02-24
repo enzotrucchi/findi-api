@@ -6,6 +6,7 @@ use App\Models\Traits\TieneOrganizacionSeleccionadaScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Movimiento extends Model
 {
@@ -30,6 +31,8 @@ class Movimiento extends Model
         'proveedor_id',
         'modo_pago_id',
         'organizacion_id',
+        'referencia_tipo',
+        'referencia_id',
     ];
 
     /**
@@ -89,5 +92,15 @@ class Movimiento extends Model
     public function organizacion(): BelongsTo
     {
         return $this->belongsTo(Organizacion::class);
+    }
+
+    /**
+     * Obtener la cuota asociada al movimiento (si aplica).
+     *
+     * @return HasOne
+     */
+    public function cuota(): HasOne
+    {
+        return $this->hasOne(Cuota::class);
     }
 }

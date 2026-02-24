@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProyectoComentarioController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CambiarOrganizacionSeleccionadaController;
 use App\Http\Controllers\Api\ListaController;
+use App\Http\Controllers\Api\PlanPagoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Asociado;
@@ -129,6 +130,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('movimientos/carga-masiva', [MovimientoController::class, 'cargaMasiva']);
     Route::put('movimientos/{id}', [MovimientoController::class, 'actualizar']);
     Route::delete('movimientos/{id}', [MovimientoController::class, 'eliminar']);
+
+    /*
+|--------------------------------------------------------------------------
+| Rutas de Planes de Pago
+|--------------------------------------------------------------------------
+*/
+    Route::get('planes-pago', [PlanPagoController::class, 'obtenerColeccion']);
+    Route::post('planes-pago', [PlanPagoController::class, 'crear']);
+    Route::get('planes-pago/{id}', [PlanPagoController::class, 'obtener']);
+    Route::post('cuotas/{id}/cancelar', [PlanPagoController::class, 'cancelarCuota']);
 
     /*
 |--------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Jobs\ProcesarCuotasDiariasJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -41,6 +42,10 @@ class Kernel extends ConsoleKernel
         // Enviar resumen mensual el día 5 de cada mes a las 10:00
         // app/Console/Commands/EnviarResumenMensual.php
         $schedule->command('resumen:enviar-mensual')->monthlyOn(5, '10:00');
+
+        // Sistema de planes de pago
+        // Marcar cuotas vencidas y enviar recordatorios diarios
+        $schedule->job(new ProcesarCuotasDiariasJob())->dailyAt('00:15');
     }
 
     /**

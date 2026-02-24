@@ -65,6 +65,16 @@ class Asociado extends Authenticatable
     }
 
     /**
+     * Obtener los planes de pago del asociado.
+     *
+     * @return HasMany
+     */
+    public function planesPago(): HasMany
+    {
+        return $this->hasMany(PlanPago::class);
+    }
+
+    /**
      * Obtener las organizaciones del asociado.
      *
      * @return BelongsToMany
