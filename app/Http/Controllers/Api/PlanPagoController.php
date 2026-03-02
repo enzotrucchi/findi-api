@@ -22,12 +22,8 @@ class PlanPagoController extends Controller
     {
         try {
             $dto = PlanPagoDTO::desdeArray($request->validated());
-            $resultado = $this->planPagoService->crearPlanPago($dto);
-            $mensaje = $resultado instanceof PlanPago
-                ? 'Plan de pago creado exitosamente'
-                : 'Planes de pago creados exitosamente';
-
-            return ApiResponse::creado($resultado, $mensaje);
+            \App\Jobs\GenerarPlanPagoJob::dispatch($dto->aArray());
+            return ApiResponse::creado(null, 'El plan de pago se está generando en segundo plano. Recibirá una notificación al finalizar.');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
