@@ -17,6 +17,7 @@ class PlanPagoDTO
         public readonly ?float $importeTotal = null,
         public readonly ?float $importePorCuota = null,
         public readonly array $cuotas = [],
+        public readonly ?int $organizacionId = null,
     ) {}
 
     /**
@@ -31,13 +32,13 @@ class PlanPagoDTO
         $cuotas = [];
         if (isset($datos['cuotas']) && is_array($datos['cuotas'])) {
             $cuotas = array_map(
-                static fn (array $cuota): CuotaDTO => CuotaDTO::desdeArray($cuota),
+                static fn(array $cuota): CuotaDTO => CuotaDTO::desdeArray($cuota),
                 $datos['cuotas']
             );
         }
 
         return new self(
-            asociadoIds: array_values(array_filter($asociadoIds, static fn (int $id): bool => $id > 0)),
+            asociadoIds: array_values(array_filter($asociadoIds, static fn(int $id): bool => $id > 0)),
             descripcion: trim($datos['descripcion']),
             cantidadCuotas: (int) $datos['cantidad_cuotas'],
             fechaPrimerVencimiento: $datos['fecha_primer_vencimiento'],
@@ -45,6 +46,7 @@ class PlanPagoDTO
             importeTotal: isset($datos['importe_total']) ? (float) $datos['importe_total'] : null,
             importePorCuota: isset($datos['importe_por_cuota']) ? (float) $datos['importe_por_cuota'] : null,
             cuotas: $cuotas,
+            organizacionId: isset($datos['organizacion_id']) ? (int) $datos['organizacion_id'] : null,
         );
     }
 
@@ -62,9 +64,10 @@ class PlanPagoDTO
             'importe_total' => $this->importeTotal,
             'importe_por_cuota' => $this->importePorCuota,
             'cuotas' => array_map(
-                static fn (CuotaDTO $cuota): array => $cuota->aArray(),
+                static fn(CuotaDTO $cuota): array => $cuota->aArray(),
                 $this->cuotas
             ),
+            'organizacion_id' => $this->organizacionId,
         ];
     }
 }

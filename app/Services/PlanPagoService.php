@@ -23,7 +23,7 @@ class PlanPagoService
 
     public function crearPlanPago(PlanPagoDTO $dto): PlanPago|EloquentCollection
     {
-        $orgId = $this->obtenerOrganizacionId();
+        $orgId = $dto->organizacionId;
         $asociadoIds = array_values(array_unique($dto->asociadoIds));
 
         if ($asociadoIds === []) {
@@ -37,14 +37,14 @@ class PlanPagoService
                     ->where('asociado_organizacion.activo', true);
             })
             ->pluck('id')
-            ->map(static fn ($id): int => (int) $id)
+            ->map(static fn($id): int => (int) $id)
             ->all();
 
         $asociadosInvalidos = array_values(array_diff($asociadoIds, $asociadosValidos));
         if ($asociadosInvalidos !== []) {
             throw new InvalidArgumentException(
                 'Uno o más asociados no pertenecen a la organización seleccionada: '
-                . implode(', ', $asociadosInvalidos),
+                    . implode(', ', $asociadosInvalidos),
                 400
             );
         }
@@ -58,7 +58,7 @@ class PlanPagoService
                 $importeTotal = round($dto->importeTotal, 2);
             } elseif ($dto->cuotas !== []) {
                 $importeTotal = round((float) collect($dto->cuotas)
-                    ->sum(fn (CuotaDTO $cuota): float => $cuota->importe), 2);
+                    ->sum(fn(CuotaDTO $cuota): float => $cuota->importe), 2);
             } else {
                 $importeTotal = round((float) $dto->importePorCuota * $dto->cantidadCuotas, 2);
             }
@@ -93,7 +93,7 @@ class PlanPagoService
     {
         if ($dto->cuotas !== []) {
             $cuotas = collect($dto->cuotas)
-                ->sortBy(static fn (CuotaDTO $cuota): int => $cuota->numero)
+                ->sortBy(static fn(CuotaDTO $cuota): int => $cuota->numero)
                 ->values()
                 ->all();
 
@@ -102,7 +102,7 @@ class PlanPagoService
             }
 
             $sumaCuotas = round((float) collect($cuotas)
-                ->sum(fn (CuotaDTO $cuota): float => $cuota->importe), 2);
+                ->sum(fn(CuotaDTO $cuota): float => $cuota->importe), 2);
 
             if ($sumaCuotas !== round($importeTotal, 2)) {
                 throw new InvalidArgumentException('La suma de cuotas no coincide con el importe total del plan.', 400);

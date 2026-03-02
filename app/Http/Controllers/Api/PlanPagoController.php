@@ -22,7 +22,11 @@ class PlanPagoController extends Controller
     {
         try {
             $dto = PlanPagoDTO::desdeArray($request->validated());
-            \App\Jobs\GenerarPlanPagoJob::dispatch($dto->aArray());
+            $user = auth()->user();
+            $orgId = $user?->organizacion_seleccionada_id;
+            $dtoArray = $dto->aArray();
+            $dtoArray['organizacion_id'] = $orgId;
+            \App\Jobs\GenerarPlanPagoJob::dispatch($dtoArray);
             return ApiResponse::creado(null, 'El plan de pago se está generando en segundo plano. Recibirá una notificación al finalizar.');
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
