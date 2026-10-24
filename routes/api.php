@@ -139,7 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('planes-pago', [PlanPagoController::class, 'obtenerColeccion']);
     Route::post('planes-pago', [PlanPagoController::class, 'crear']);
     Route::get('planes-pago/{id}', [PlanPagoController::class, 'obtener']);
-    Route::post('cuotas/{id}/cancelar', [PlanPagoController::class, 'cancelarCuota']);
+    Route::post('planes-pago/cuotas/{id}/cancelar', [PlanPagoController::class, 'cancelarCuota']);
 
     /*
 |--------------------------------------------------------------------------

@@ -21,18 +21,20 @@ class ProcesarCuotasDiariasJob implements ShouldQueue
     public function handle(): void
     {
         $hoy = now()->startOfDay();
-        $fechaRecordatorio = now()->addDays(2)->toDateString();
+        $limiteRecordatorio = $hoy->copy()->addDays(5)->toDateString();
 
+        // Marcar cuotas vencidas
         Cuota::query()
             ->where('estado', 'pendiente')
             ->whereDate('fecha_vencimiento', '<', $hoy->toDateString())
             ->update(['estado' => 'vencida']);
 
+        // Enviar recordatorios diarios para cuotas que vencen en los próximos 5 días
         Cuota::query()
             ->with('planPago.asociado')
             ->where('estado', 'pendiente')
-            ->whereDate('fecha_vencimiento', $fechaRecordatorio)
-            ->whereNull('recordatorio_enviado_at')
+            ->whereDate('fecha_vencimiento', '>=', $hoy->toDateString())
+            ->whereDate('fecha_vencimiento', '<=', $limiteRecordatorio)
             ->orderBy('id')
             ->chunkById(100, function ($cuotas): void {
                 foreach ($cuotas as $cuota) {
