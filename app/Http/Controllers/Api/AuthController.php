@@ -20,6 +20,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private const SESION_SIGNUP = 'signup_google_verificado';
+
     public function __construct(
         private OrganizacionService $organizacionService,
     ) {}
@@ -102,8 +104,17 @@ class AuthController extends Controller
             ]);
         }
 
-        $email        = $payload['email'];
+        $email        = strtolower(trim($payload['email']));
         $nombreGoogle = $payload['name'] ?? $email;
+
+        // crear-cuenta solo acepta el email que Google acaba de verificar en esta sesión.
+        if ($request->hasSession()) {
+            $request->session()->put(self::SESION_SIGNUP, [
+                'email'     => $email,
+                'google_id' => $payload['sub'] ?? null,
+                'expira'    => now()->addMinutes(30)->getTimestamp(),
+            ]);
+        }
 
         /** @var \App\Models\Asociado|null $asociado */
         $asociado = Asociado::where('email', $email)->first();
@@ -474,11 +485,18 @@ class AuthController extends Controller
         $validated = $request->validate([
             'nombre_usuario'      => 'required|string|max:255',
             'nombre_organizacion' => 'required|string|max:255',
-            'email'               => 'required|email|max:255',
         ]);
 
+        $verificado = $request->hasSession() ? $request->session()->get(self::SESION_SIGNUP) : null;
+
+        if (! $verificado || $verificado['expira'] < now()->getTimestamp()) {
+            return response()->json([
+                'message' => 'Iniciá sesión con Google para crear la cuenta.',
+            ], 401);
+        }
+
         try {
-            $resultado = DB::transaction(function () use ($validated) {
+            $resultado = DB::transaction(function () use ($validated, $verificado) {
                 $organizacionDTO = new OrganizacionDTO(
                     nombre: $validated['nombre_organizacion'],
                     fechaAlta: now()->format('Y-m-d'),
@@ -488,14 +506,13 @@ class AuthController extends Controller
 
                 $organizacion = $this->organizacionService->crear($organizacionDTO);
 
-                $emailNormalizado = strtolower(trim($validated['email']));
-
-                $asociadoModel = Asociado::where('email', $emailNormalizado)->first();
+                $asociadoModel = Asociado::where('email', $verificado['email'])->first();
 
                 if (! $asociadoModel) {
                     $asociadoModel = Asociado::create([
-                        'nombre' => trim($validated['nombre_usuario']),
-                        'email'  => $emailNormalizado,
+                        'nombre'    => trim($validated['nombre_usuario']),
+                        'email'     => $verificado['email'],
+                        'google_id' => $verificado['google_id'],
                     ]);
                 }
 
@@ -524,10 +541,10 @@ class AuthController extends Controller
 
             return response()->json([
                 'message' => 'Error al crear la cuenta',
-                'error' => $e->getMessage(),
             ], 500);
         }
 
+        $request->session()->forget(self::SESION_SIGNUP);
         auth()->login($resultado['asociado']);
 
         try {
