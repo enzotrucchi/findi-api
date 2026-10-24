@@ -25,10 +25,8 @@ class Asociado extends Authenticatable
         'email',
         'telefono',
         'domicilio',
-        'organizacion_seleccionada_id',
         'google_id',
         'email_verified_at',
-        'password',
     ];
 
     /**
@@ -37,7 +35,6 @@ class Asociado extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
         'remember_token',
         'google_id',
     ];
@@ -49,9 +46,7 @@ class Asociado extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
         'activo' => 'boolean',
-        'es_admin' => 'boolean',
     ];
 
     /**

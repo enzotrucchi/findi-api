@@ -163,7 +163,7 @@ class AsociadoController extends Controller
 
     public function actualizarPerfil(UpdateMeRequest $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
+        /** @var \App\Models\Asociado $user */
         $user = Auth::user();
         $organizacionActualizada = null;
         $actualizoUsuario = false;
