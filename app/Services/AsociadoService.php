@@ -245,8 +245,16 @@ class AsociadoService
 
         // Validar email si cambió
         $emailNormalizado = $this->normalizarEmail($dto->email);
-        if ($emailNormalizado !== $asociado->email && $this->existeEmail($emailNormalizado, $id)) {
-            throw new InvalidArgumentException('El email ya está registrado.');
+        if ($emailNormalizado !== $asociado->email) {
+            if ($this->existeEmail($emailNormalizado, $id)) {
+                throw new InvalidArgumentException('El email ya está registrado.');
+            }
+
+            // El email es la identidad de login: si el asociado ya ingresó o está en otra
+            // organización, cambiarlo le daría a esta organización control sobre esa cuenta.
+            if ($asociado->google_id || $asociado->organizaciones()->count() > 1) {
+                throw new InvalidArgumentException('No se puede cambiar el email de un asociado que ya ingresó a Findi o pertenece a otra organización.');
+            }
         }
 
         // Preparar datos normalizados
@@ -278,6 +286,7 @@ class AsociadoService
 
         $asociado->organizaciones()->updateExistingPivot($orgId, [
             'activo' => true,
+            'fecha_baja' => null,
         ]);
 
         return $asociado->fresh();
@@ -294,10 +303,15 @@ class AsociadoService
             return null;
         }
 
+        if ($asociado->id === $this->obtenerUsuarioAutenticado()->id) {
+            throw new InvalidArgumentException('No podés darte de baja a vos mismo.');
+        }
+
         $orgId = $this->obtenerOrganizacionId();
 
         $asociado->organizaciones()->updateExistingPivot($orgId, [
-            'activo' => null,
+            'activo' => false,
+            'fecha_baja' => now()->toDateString(),
         ]);
 
         return $asociado->fresh();

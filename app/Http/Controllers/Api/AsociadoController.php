@@ -156,6 +156,8 @@ class AsociadoController extends Controller
             }
 
             return ApiResponse::exito($asociado, 'Asociado desactivado exitosamente');
+        } catch (InvalidArgumentException $e) {
+            return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
             return ApiResponse::error('Error al desactivar asociado: ' . $e->getMessage(), 500);
         }

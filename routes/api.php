@@ -127,7 +127,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('asociados/{id}', [AsociadoController::class, 'actualizar'])->whereNumber('id');
             Route::patch('asociados/{id}/activar', [AsociadoController::class, 'activar'])->whereNumber('id');
             Route::patch('asociados/{id}/desactivar', [AsociadoController::class, 'desactivar'])->whereNumber('id');
-            Route::delete('asociados/{id}', [AsociadoController::class, 'eliminar'])->whereNumber('id');
 
             /*
             |------------------------------------------------------------------
