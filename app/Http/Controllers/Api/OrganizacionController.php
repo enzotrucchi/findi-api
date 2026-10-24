@@ -4,280 +4,123 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
+use App\Models\Organizacion;
 use App\Services\OrganizacionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
-use App\DTOs\Organizacion\OrganizacionDTO;
-use App\DTOs\Organizacion\FiltroOrganizacionDTO;
 
 class OrganizacionController extends Controller
 {
     public function __construct(private OrganizacionService $organizacionService) {}
 
+    /**
+     * Organizaciones activas del usuario autenticado.
+     */
     public function obtenerColeccion(Request $request): JsonResponse
     {
-        try {
-            $filtroDTO = new FiltroOrganizacionDTO();
-            $filtroDTO->setSoloPrueba($this->normalizarBooleano($request->query('prueba', $request->query('es_prueba'))));
-            $filtroDTO->setSoloProduccion($this->normalizarBooleano($request->query('produccion')));
-            $filtroDTO->setSoloHabilitadas($this->normalizarBooleano($request->query('activos', $request->query('habilitadas'))));
-            $filtroDTO->setSearch($request->query('search', $request->query('q', $request->query('busqueda'))));
+        $organizaciones = $request->user()
+            ->organizaciones()
+            ->wherePivot('activo', true)
+            ->orderBy('nombre')
+            ->get();
 
-            $organizaciones = $this->organizacionService->obtenerColeccion($filtroDTO);
-
-            return ApiResponse::exito($organizaciones, 'Organizaciones obtenidas exitosamente');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener organizaciones: ' . $e->getMessage(), 500);
-        }
+        return ApiResponse::exito($organizaciones, 'Organizaciones obtenidas exitosamente');
     }
 
-    public function obtener(int $id): JsonResponse
+    /**
+     * Una organización de la que el usuario es miembro activo.
+     */
+    public function obtener(Request $request, int $id): JsonResponse
     {
-        try {
-            $organizacion = $this->organizacionService->obtenerPorId($id);
+        $organizacion = $request->user()
+            ->organizaciones()
+            ->wherePivot('activo', true)
+            ->where('organizaciones.id', $id)
+            ->first();
 
-            if (!$organizacion) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
-
-            return ApiResponse::exito($organizacion, 'Organización obtenida exitosamente');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener organización: ' . $e->getMessage(), 500);
+        if (! $organizacion) {
+            return ApiResponse::noEncontrado('Organización no encontrada');
         }
+
+        return ApiResponse::exito($organizacion, 'Organización obtenida exitosamente');
     }
 
-    public function crear(Request $request): JsonResponse
-    {
-        try {
-            $dto = OrganizacionDTO::desdeArray($request->all());
-            $organizacion = $this->organizacionService->crear($dto);
-
-            return ApiResponse::creado($organizacion, 'Organización creada exitosamente');
-        } catch (InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 400);
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear organización: ' . $e->getMessage(), 500);
-        }
-    }
-
+    /**
+     * Actualizar la organización seleccionada. Solo se puede cambiar el nombre:
+     * prueba, vencimiento y habilitación los maneja la facturación.
+     */
     public function actualizar(Request $request, int $id): JsonResponse
     {
+        $organizacion = $this->organizacionSeleccionada($request);
+
+        if ($organizacion->id !== $id) {
+            return ApiResponse::error('Solo podés actualizar la organización seleccionada', 403);
+        }
+
+        $datos = $request->validate([
+            'nombre' => 'required|string|max:255',
+        ]);
+
         try {
-            // Verificar que el usuario autenticado es admin de esta organización
-            $usuario = $request->user();
-            $esAdmin = $usuario->organizaciones()
-                ->where('organizacion_id', $id)
-                ->wherePivot('es_admin', true)
-                ->exists();
-
-            if (!$esAdmin) {
-                return ApiResponse::error('No tienes permisos para actualizar esta organización', 403);
-            }
-
-            $dto = OrganizacionDTO::desdeArray($request->all());
-            $organizacion = $this->organizacionService->actualizar($id, $dto);
-
-            if (!$organizacion) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
+            $organizacion = $this->organizacionService->actualizarNombre($organizacion, $datos['nombre']);
 
             return ApiResponse::exito($organizacion, 'Organización actualizada exitosamente');
-        } catch (InvalidArgumentException $e) {
-            return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar organización: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function eliminar(int $id): JsonResponse
-    {
-        try {
-            $eliminado = $this->organizacionService->eliminar($id);
-
-            if (!$eliminado) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
-
-            return ApiResponse::exito(null, 'Organización eliminada exitosamente');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar organización: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function buscar(Request $request): JsonResponse
-    {
-        try {
-            $termino = $request->query('q') ?? $request->query('busqueda');
-
-            if (!$termino) {
-                return ApiResponse::error('Falta término de búsqueda', 400);
-            }
-
-            $resultados = $this->organizacionService->buscar($termino);
-            return ApiResponse::exito($resultados, 'Búsqueda completada');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error en la búsqueda: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function contar(Request $request): JsonResponse
-    {
-        try {
-            $filtroDTO = new FiltroOrganizacionDTO();
-            $filtroDTO->setSoloPrueba($this->normalizarBooleano($request->query('prueba', $request->query('es_prueba'))));
-            $filtroDTO->setSoloProduccion($this->normalizarBooleano($request->query('produccion')));
-            $filtroDTO->setSoloHabilitadas($this->normalizarBooleano($request->query('activos', $request->query('habilitadas'))));
-            $filtroDTO->setSearch($request->query('search', $request->query('q', $request->query('busqueda'))));
-
-            $cantidad = $this->organizacionService->contar($filtroDTO);
-            return ApiResponse::exito(['cantidad' => $cantidad], 'Conteo realizado');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al contar organizaciones: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function obtenerPorIds(Request $request): JsonResponse
-    {
-        try {
-            $ids = $request->input('ids', []);
-            $coleccion = $this->organizacionService->obtenerPorIds((array) $ids);
-            return ApiResponse::exito($coleccion, 'Organizaciones obtenidas por ids');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener por ids: ' . $e->getMessage(), 500);
-        }
-    }
-
-    public function existe(int $id): JsonResponse
-    {
-        try {
-            $existe = $this->organizacionService->existePorId($id);
-            return ApiResponse::exito(['existe' => $existe], 'Verificación completada');
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al verificar existencia: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar organización', $e);
         }
     }
 
     public function obtenerCodigoAcceso(Request $request): JsonResponse
     {
-        try {
-            $usuario = $request->user();
-            $orgId = $usuario->organizacion_seleccionada_id;
-
-            if (!$orgId) {
-                return ApiResponse::error('No tienes una organización seleccionada', 400);
-            }
-
-            // Verificar que es admin
-            $esAdmin = $usuario->organizaciones()
-                ->where('organizacion_id', $orgId)
-                ->wherePivot('es_admin', true)
-                ->exists();
-
-            if (!$esAdmin) {
-                return ApiResponse::error('No tienes permisos para ver el código de acceso', 403);
-            }
-
-            $organizacion = $this->organizacionService->obtenerPorId($orgId);
-
-            if (!$organizacion) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
-
-            return ApiResponse::exito(
-                ['codigo_acceso' => $organizacion->codigo_acceso],
-                'Código de acceso obtenido exitosamente'
-            );
-        } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener código de acceso: ' . $e->getMessage(), 500);
-        }
+        return ApiResponse::exito(
+            ['codigo_acceso' => $this->organizacionSeleccionada($request)->codigo_acceso],
+            'Código de acceso obtenido exitosamente'
+        );
     }
 
     public function regenerarCodigoAcceso(Request $request): JsonResponse
     {
         try {
-            $usuario = $request->user();
-            $orgId = $usuario->organizacion_seleccionada_id;
-
-            if (!$orgId) {
-                return ApiResponse::error('No tienes una organización seleccionada', 400);
-            }
-
-            // Verificar que es admin
-            $esAdmin = $usuario->organizaciones()
-                ->where('organizacion_id', $orgId)
-                ->wherePivot('es_admin', true)
-                ->exists();
-
-            if (!$esAdmin) {
-                return ApiResponse::error('No tienes permisos para regenerar el código de acceso', 403);
-            }
-
-            $organizacion = $this->organizacionService->regenerarCodigoAcceso($orgId);
-
-            if (!$organizacion) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
+            $organizacion = $this->organizacionService->regenerarCodigoAcceso($this->organizacionSeleccionada($request)->id);
 
             return ApiResponse::exito(
                 ['codigo_acceso' => $organizacion->codigo_acceso],
                 'Código de acceso regenerado exitosamente'
             );
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al regenerar código de acceso: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al regenerar código de acceso', $e);
         }
     }
 
     public function actualizarCodigoAcceso(Request $request): JsonResponse
     {
+        $request->validate([
+            'codigo_acceso' => 'required|string|size:6',
+        ]);
+
         try {
-            $request->validate([
-                'codigo_acceso' => 'required|string|size:6',
-            ]);
-
-            $usuario = $request->user();
-            $orgId = $usuario->organizacion_seleccionada_id;
-
-            if (!$orgId) {
-                return ApiResponse::error('No tienes una organización seleccionada', 400);
-            }
-
-            // Verificar que es admin
-            $esAdmin = $usuario->organizaciones()
-                ->where('organizacion_id', $orgId)
-                ->wherePivot('es_admin', true)
-                ->exists();
-
-            if (!$esAdmin) {
-                return ApiResponse::error('No tienes permisos para actualizar el código de acceso', 403);
-            }
-
             $organizacion = $this->organizacionService->actualizarCodigoAcceso(
-                $orgId,
+                $this->organizacionSeleccionada($request)->id,
                 $request->input('codigo_acceso')
             );
-
-            if (!$organizacion) {
-                return ApiResponse::noEncontrado('Organización no encontrada');
-            }
 
             return ApiResponse::exito(
                 ['codigo_acceso' => $organizacion->codigo_acceso],
                 'Código de acceso actualizado exitosamente'
             );
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar código de acceso: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar código de acceso', $e);
         }
     }
 
-    private function normalizarBooleano(mixed $valor): ?bool
+    /**
+     * La organización que validó el middleware org.activa.
+     */
+    private function organizacionSeleccionada(Request $request): Organizacion
     {
-        if ($valor === null) {
-            return null;
-        }
-
-        return filter_var($valor, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+        return $request->attributes->get('organizacion');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
+use Throwable;
 
 /**
  * Helper para respuestas estandarizadas de la API
@@ -54,6 +55,19 @@ class ApiResponse
         }
 
         return response()->json($respuesta, $codigoEstado);
+    }
+
+    /**
+     * Error 500 sin exponer el detalle de la excepción: se reporta al log y el cliente
+     * recibe solo el mensaje genérico.
+     */
+    public static function errorInterno(
+        string $mensaje,
+        Throwable $excepcion
+    ): JsonResponse {
+        report($excepcion);
+
+        return self::error($mensaje, 500);
     }
 
     /**
