@@ -31,7 +31,7 @@ class ListaController extends Controller
 
             return ApiResponse::exito($listas, 'Listas obtenidas exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener listas: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener listas', $e);
         }
     }
 
@@ -45,7 +45,7 @@ class ListaController extends Controller
             $listas = $this->listaService->obtenerTodas();
             return ApiResponse::exito($listas, 'Listas obtenidas exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener listas: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener listas', $e);
         }
     }
 
@@ -64,7 +64,7 @@ class ListaController extends Controller
 
             return ApiResponse::exito($lista, 'Lista obtenida exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener lista: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener lista', $e);
         }
     }
 
@@ -82,7 +82,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear lista: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear lista', $e);
         }
     }
 
@@ -100,7 +100,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar lista: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar lista', $e);
         }
     }
 
@@ -121,7 +121,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar lista: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al eliminar lista', $e);
         }
     }
 
@@ -137,7 +137,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener asociados', $e);
         }
     }
 
@@ -153,7 +153,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al agregar asociados: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al agregar asociados', $e);
         }
     }
 
@@ -169,7 +169,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar asociados: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar asociados', $e);
         }
     }
 
@@ -185,7 +185,7 @@ class ListaController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al remover asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al remover asociado', $e);
         }
     }
 }

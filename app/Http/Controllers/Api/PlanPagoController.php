@@ -31,7 +31,7 @@ class PlanPagoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear plan de pago: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear plan de pago', $e);
         }
     }
 
@@ -46,7 +46,7 @@ class PlanPagoController extends Controller
 
             return ApiResponse::exito($planPago, 'Plan de pago obtenido exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener plan de pago: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener plan de pago', $e);
         }
     }
 
@@ -57,7 +57,7 @@ class PlanPagoController extends Controller
             $planes = $this->planPagoService->obtenerColeccion($filtroDTO);
             return ApiResponse::exito($planes, 'Planes de pago obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener planes de pago: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener planes de pago', $e);
         }
     }
 
@@ -69,7 +69,7 @@ class PlanPagoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al cancelar cuota: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al cancelar cuota', $e);
         }
     }
 }

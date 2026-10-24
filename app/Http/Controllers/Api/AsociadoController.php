@@ -33,7 +33,7 @@ class AsociadoController extends Controller
 
             return ApiResponse::exito($asociado, 'Asociado obtenido exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener asociado', $e);
         }
     }
 
@@ -53,7 +53,7 @@ class AsociadoController extends Controller
 
             return ApiResponse::exito($asociados, 'Asociados obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener asociados', $e);
         }
     }
 
@@ -67,7 +67,7 @@ class AsociadoController extends Controller
             $asociados = $this->asociadoService->obtenerTodos();
             return ApiResponse::exito($asociados, 'Asociados obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener asociados: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener asociados', $e);
         }
     }
 
@@ -77,7 +77,7 @@ class AsociadoController extends Controller
             $estadisticas = $this->asociadoService->obtenerEstadisticas();
             return ApiResponse::exito($estadisticas, 'Estadísticas de asociados obtenidas');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener estadísticas: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener estadísticas', $e);
         }
     }
 
@@ -93,7 +93,7 @@ class AsociadoController extends Controller
 
             return ApiResponse::exito($movimientos, 'Movimientos del asociado obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener movimientos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener movimientos', $e);
         }
     }
 
@@ -108,7 +108,7 @@ class AsociadoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), $e->getCode() ?: 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear asociado', $e);
         }
     }
 
@@ -127,7 +127,7 @@ class AsociadoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar asociado', $e);
         }
     }
 
@@ -142,7 +142,7 @@ class AsociadoController extends Controller
 
             return ApiResponse::exito($asociado, 'Asociado activado exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al activar asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al activar asociado', $e);
         }
     }
 
@@ -159,7 +159,7 @@ class AsociadoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al desactivar asociado: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al desactivar asociado', $e);
         }
     }
 

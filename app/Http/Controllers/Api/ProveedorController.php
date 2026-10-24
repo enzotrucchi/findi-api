@@ -49,10 +49,7 @@ class ProveedorController extends Controller
                 'Proveedores obtenidos exitosamente'
             );
         } catch (\Exception $e) {
-            return ApiResponse::error(
-                'Error al obtener proveedores: ' . $e->getMessage(),
-                500
-            );
+            return ApiResponse::errorInterno('Error al obtener proveedores', $e);
         }
     }
 
@@ -68,7 +65,7 @@ class ProveedorController extends Controller
 
             return ApiResponse::exito($movimientos, 'Movimientos del proveedor obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener movimientos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener movimientos', $e);
         }
     }
 
@@ -92,10 +89,7 @@ class ProveedorController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error(
-                'Error al crear proveedor: ' . $e->getMessage(),
-                500
-            );
+            return ApiResponse::errorInterno('Error al crear proveedor', $e);
         }
     }
 
@@ -122,10 +116,7 @@ class ProveedorController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error(
-                'Error al actualizar proveedor: ' . $e->getMessage(),
-                500
-            );
+            return ApiResponse::errorInterno('Error al actualizar proveedor', $e);
         }
     }
 
@@ -163,10 +154,7 @@ class ProveedorController extends Controller
                 'Proveedor eliminado exitosamente'
             );
         } catch (\Exception $e) {
-            return ApiResponse::error(
-                'Error al eliminar proveedor: ' . $e->getMessage(),
-                500
-            );
+            return ApiResponse::errorInterno('Error al eliminar proveedor', $e);
         }
     }
 }

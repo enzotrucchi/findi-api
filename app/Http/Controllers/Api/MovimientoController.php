@@ -33,7 +33,7 @@ class MovimientoController extends Controller
 
             return ApiResponse::exito($movimientos, 'Movimientos obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener movimientos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener movimientos', $e);
         }
     }
 
@@ -46,7 +46,7 @@ class MovimientoController extends Controller
             $balance = $this->movimientoService->obtenerBalance();
             return ApiResponse::exito($balance, 'Balance obtenido exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener balance: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener balance', $e);
         }
     }
 
@@ -63,7 +63,7 @@ class MovimientoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear movimiento: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear movimiento', $e);
         }
     }
 
@@ -81,7 +81,7 @@ class MovimientoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear movimientos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear movimientos', $e);
         }
     }
 
@@ -102,7 +102,7 @@ class MovimientoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar movimiento: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar movimiento', $e);
         }
     }
 
@@ -120,7 +120,7 @@ class MovimientoController extends Controller
 
             return ApiResponse::exito(null, 'Movimiento eliminado exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar movimiento: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al eliminar movimiento', $e);
         }
     }
 
@@ -138,7 +138,7 @@ class MovimientoController extends Controller
 
             return $pdf;
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al generar comprobante: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al generar comprobante', $e);
         }
     }
 }

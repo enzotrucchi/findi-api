@@ -27,7 +27,7 @@ class ProyectoController extends Controller
 
             return ApiResponse::exito($proyectos, 'Proyectos obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener proyectos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener proyectos', $e);
         }
     }
 
@@ -38,7 +38,7 @@ class ProyectoController extends Controller
 
             return ApiResponse::exito($estadisticas, 'Estadísticas de proyectos obtenidas exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener estadísticas de proyectos: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener estadísticas de proyectos', $e);
         }
     }
 
@@ -50,7 +50,7 @@ class ProyectoController extends Controller
 
             return ApiResponse::exito($movimientos, 'Movimientos del proyecto obtenidos exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener movimientos del proyecto: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener movimientos del proyecto', $e);
         }
     }
 
@@ -65,7 +65,7 @@ class ProyectoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al crear proyecto: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al crear proyecto', $e);
         }
     }
 
@@ -83,7 +83,7 @@ class ProyectoController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar proyecto: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar proyecto', $e);
         }
     }
 
@@ -111,7 +111,7 @@ class ProyectoController extends Controller
 
             return ApiResponse::exito(null, 'Proyecto eliminado exitosamente');
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar proyecto: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al eliminar proyecto', $e);
         }
     }
 }

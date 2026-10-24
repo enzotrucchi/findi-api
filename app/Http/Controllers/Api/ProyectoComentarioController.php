@@ -25,7 +25,7 @@ class ProyectoComentarioController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al obtener comentarios: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al obtener comentarios', $e);
         }
     }
 
@@ -49,7 +49,7 @@ class ProyectoComentarioController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al agregar comentario: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al agregar comentario', $e);
         }
     }
 
@@ -77,7 +77,7 @@ class ProyectoComentarioController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al actualizar comentario: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al actualizar comentario', $e);
         }
     }
 
@@ -97,7 +97,7 @@ class ProyectoComentarioController extends Controller
         } catch (InvalidArgumentException $e) {
             return ApiResponse::error($e->getMessage(), 400);
         } catch (\Exception $e) {
-            return ApiResponse::error('Error al eliminar comentario: ' . $e->getMessage(), 500);
+            return ApiResponse::errorInterno('Error al eliminar comentario', $e);
         }
     }
 }

@@ -102,7 +102,6 @@ class FacturaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al generar factura',
-                'error' => $e->getMessage(),
             ], 400);
         }
     }
@@ -133,7 +132,6 @@ class FacturaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al procesar pago',
-                'error' => $e->getMessage(),
             ], 400);
         }
     }
@@ -160,7 +158,6 @@ class FacturaController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al cancelar factura',
-                'error' => $e->getMessage(),
             ], 400);
         }
     }
